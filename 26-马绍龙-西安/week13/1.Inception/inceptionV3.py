@@ -254,3 +254,4 @@ if __name__ == '__main__':
 
     preds = model.predict(x)
     print('Predicted:', decode_predictions(preds))
+    # Predicted: [[('n02504458', 'African_elephant', 0.5918947), ('n01871265', 'tusker', 0.32151768), ('n02504013', 'Indian_elephant', 0.060385797), ('n03075370', 'combination_lock', 0.00025142147), ('n02391049', 'zebra', 0.00017755575)]]
