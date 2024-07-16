@@ -40,7 +40,7 @@ def resize_image(image, size):
     with tf.name_scope('resize_image'):
         images = []
         for i in image:
-            i = cv2.resize(i, size)
+            i = cv2.resize(i, size)  # i(224，224，3) -> size(224,224)
             images.append(i)
         images = np.array(images)
         return images
