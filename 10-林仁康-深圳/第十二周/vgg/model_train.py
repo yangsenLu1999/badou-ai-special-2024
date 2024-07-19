@@ -1,6 +1,6 @@
 '''
 @author linrenkang
-基于 keras Alex 神经网络
+基于 keras 训练神经网络
 '''
 import tensorflow as tf
 import keras.optimizers
@@ -92,15 +92,17 @@ class Model:
         else:
             print("Keras is not using GPU.")
 
+    # 使用 NPU 加速
+    def _InitByARMNPU(self):
+        sess = tf.compat.v1.Session(config=tf.compat.v1.ConfigProto(log_device_placement=True))
+        keras.backend.set_session(sess)
+
     # 导出函数
     # 训练
     def Train(self, namePath, imgPath, testNamePath, testImgPath, rate, epoches, batchSize, trainNum, testNum):
-
-        loacl_decide_protos = device_lib.list_local_devices()
-        print("loacl_decide_protos: ", loacl_decide_protos)
         print('with batch size {}.'.format(batchSize))
+        self._InitByARMNPU()
         self.network = network.Network()
-        # self.network.net = multi_gpu_model(self.network.net, gpus=8)
 
         # 3代保存一次
         checkpoint_period1 = ModelCheckpoint(

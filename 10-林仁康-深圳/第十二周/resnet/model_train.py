@@ -1,6 +1,6 @@
 '''
 @author linrenkang
-基于 keras Alex 神经网络
+基于 keras 训练神经网络
 '''
 import keras.optimizers
 from keras.backend.tensorflow_backend import set_session
@@ -88,9 +88,16 @@ class Model:
         else:
             print("Keras is not using GPU.")
 
+    # 使用 NPU 加速
+    def _InitByARMNPU(self):
+        sess = tf.compat.v1.Session(config=tf.compat.v1.ConfigProto(log_device_placement=True))
+        keras.backend.set_session(sess)
+
     # 导出函数
     # 训练
     def Train(self, namePath, imgPath, testNamePath, testImgPath, rate, epoches, batchSize, trainNum, testNum):
+        print('with batch size {}.'.format(batchSize))
+        self._InitByARMNPU()
         self.network = network.Network()
 
         # 3代保存一次
@@ -156,9 +163,9 @@ if __name__ == "__main__":
         linesTest = f.readlines()
 
     myModel = Model()
-    batchSize = 5
+    batchSize = 50
     trainBum = int(len(lines) / batchSize)
     testNum = int(len(linesTest) / batchSize)
     myModel.Train(trainNamePath, trainImgPath, testNameTestPath, trainImgTestPath,
-                  1e-3, 5, batchSize, trainBum, testNum)
+                  1e-3, 50, batchSize, trainBum, testNum)
     myModel.Predict(testImg)

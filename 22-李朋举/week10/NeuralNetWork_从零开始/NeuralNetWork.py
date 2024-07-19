@@ -56,6 +56,15 @@ class NeuralNetWork:
     """
     def train(self, inputs_list, targets_list):
         """
+        在神经网络中，通常要求输入数据具有固定的维度。将图片转换为 2 维数组可以将图像的每个像素作为一个输入特征，并且可以通过调整数组的维度来适应不同大小的图片。
+        具体来说，通过将图片转换为 2 维数组，可以将图像的高度和宽度作为数组的两个维度，这样神经网络就可以对每个像素进行处理和分析。
+        inputs -> ndarray:(784,1)      [    [0.01      ],                 argets-> ndarray:(10,1)    [  [0.01],
+                                            ...                                                         ...
+                                            [0.86023529],                                               [0.99],    第5个
+                                            ...                                                         ...
+                                            [0.01      ]     ]                                          [0.01]  ]
+
+
                   inputs                hidden_outputs                final_outputs
                   (784,1)                 (200，1)                      (10，1)
                                           zh1/ah1                       zo1/ao1
@@ -77,7 +86,7 @@ class NeuralNetWork:
             2. `.T`：这部分代码对上一步生成的数组进行转置操作。转置操作会交换数组的行和列，使得原来的行变为列，原来的列变为行。
             综上所述，这段代码的作用是将输入列表 `inputs_list` 转换为一个二维数组，并对其进行转置操作，以满足后续处理的要求。
         inputs_list-> ndarray(784,)  [0.01  0.01 ...... 0.538  0.99223529, 0.99223529 0.99223529 0.83305882  0.01 ]
-        inputs -> ndarray:(784,1)    [[0.01      ], [0.01      ], [0.01      ], .......[0.01      ], [0.86023529], [0.99223529], [0.99223529], [0.16141176], [0.01      ] ]
+        inputs -> ndarray:(784,1) float64   [[0.01      ], [0.01      ], [0.01      ], .......[0.01      ], [0.86023529], [0.99223529], [0.99223529], [0.16141176], [0.01      ] ]
         '''
         inputs = numpy.array(inputs_list, ndmin=2).T
         '''
@@ -87,18 +96,24 @@ class NeuralNetWork:
         targets = numpy.array(targets_list, ndmin=2).T
         # 计算信号经过输入层后产生的信号量  矩阵乘(AB的行列数必须满足要求)
         """
-        self.wih => ndarry(200，784) dtype-float64     inputs => ndarray:(784,1) dtype-float64   
+        self.wih => ndarry(200，784) float64     inputs => ndarray:(784,1) dtype-float64   
         hidden_inputs => ndarry(200，1)  [[ 1.33109893e+00], [ 2.90960728e-01], [-8.80236886e-01],......, [-8.08880699e-01], [ 9.41510082e-01]]
         """
         hidden_inputs = numpy.dot(self.wih, inputs)
         # 中间层神经元对输入的信号做激活函数后得到输出信号
         """
-        hidden_outputs =>ndarry(200，1)  [[0.78637499], [0.3250882 ], [0.62135534], ......, [0.78473486], [0.51411813], [0.36048346]]
+        hidden_outputs =>ndarry(200，1) float64   [[0.78637499], [0.3250882 ], [0.62135534], ......, [0.78473486], [0.51411813], [0.36048346]]
         """
         hidden_outputs = self.activation_function(hidden_inputs)
         # 输出层接收来自中间层的信号量
+        '''
+        final_inputs => ndarray(10,1) float64  [[0.85891685], [0.80720771], [0.14601244], [0.57006686], [0.10205667], [0.04559657], [0.47556859], [0.93382009], [0.92761455], [0.49325294]]
+        '''
         final_inputs = numpy.dot(self.who, hidden_outputs)
         # 输出层对信号量进行激活函数后得到最终输出信号
+        '''
+        final_outputs = >ndarray(10,1) [[0.85891685], [0.80720771], [0.14601244], [0.57006686], [0.10205667], [0.04559657], [0.47556859], [0.93382009], [0.92761455], [0.49325294]]
+        '''
         final_outputs = self.activation_function(final_inputs)
 
         """
@@ -167,14 +182,15 @@ class NeuralNetWork:
                                                           ∂W1      
         """
         '''
-        targets 标签值   final_outputs 输出值
+        targets 标签值   final_outputs 输出值   
+        output_errors => ndarray(10,1) float64 [[-0.84891685], [-0.79720771], [-0.13601244], [-0.56006686], [-0.09205667], [ 0.94440343], [-0.46556859], [-0.92382009], [-0.91761455], [-0.48325294]]
         '''
         output_errors = targets - final_outputs
         '''
         用δh1表示隐藏层单元h1的误差:
         hidden_errors  [(ao1-t1)*(ao1*(1-ao1))*w5 + (ao2-t1)*(ao2*(1-ao2))*w7]
                                         w5   (ao1-t1)       *       (ao1*(1-ao1))
-                                     +  w7   (ao2-t1)       *       (ao2*(1-ao2)）
+                                     +  w7   (ao2-t1)       *       (ao2*(1-ao2)）   ndarray=(200,1) float64   [[ 0.05825023], [-0.02566343], [-0.11698465], [-0.17276015], [ 0.07346951], [-0.00807457], [-0.00793832], [-0.0587761 ], [-0.0545183 ], [ 0.08577762], [ 0.03770114], [-0.12759816], [ 0.10236336], [ 0.1153629 ], [ 0.03908558], [-0.17698186], [ 0.04213452], 
         '''
         hidden_errors = numpy.dot(self.who.T, output_errors * final_outputs * (1 - final_outputs))
         """
@@ -186,7 +202,7 @@ class NeuralNetWork:
                                                         δo1 (表示输出层单元o1的误差)             
         """
         #              η    *           ( -(t1−ao1)   * [     ao1     *      (1−ao1)      ]) *         aℎ1
-        self.who += self.lr * numpy.dot((output_errors * final_outputs * (1 - final_outputs)), numpy.transpose(hidden_outputs))
+        self.who += self.lr * numpy.dot((output_errors * final_outputs * (1 - final_outputs)), numpy.transpose(hidden_outputs))   # ndarray=(10,200) float64
         """
         更新权值: 根据误差计算链路权重的更新量，然后把更新加到原来链路权重上  +=, 后满结果自带了方向
         
@@ -195,7 +211,7 @@ class NeuralNetWork:
                                 ∂W1                     -------------------------------------------------------
                                                         δh1 (表示隐藏层单元h1的误差) hidden_errors
         """
-        self.wih += self.lr * numpy.dot((hidden_errors * hidden_outputs * (1 - hidden_outputs)), numpy.transpose(inputs))
+        self.wih += self.lr * numpy.dot((hidden_errors * hidden_outputs * (1 - hidden_outputs)), numpy.transpose(inputs))        # # ndarray=(200,74) float64
         # 训练的过程中更新了权值,这里不需要返回
         pass
 
@@ -274,19 +290,19 @@ for e in range(epochs):
                 image_array / 255.0  =》 0 - 1     
                 image_array / 255.0 * 0.99 => 0 - 0.99
                 image_array / 255.0 * 0.99 + 0.01 =》 0 - 1
-         inputs-> ndarray(784,)  [0.01  0.01 ...... 0.538  0.99223529, 0.99223529 0.99223529 0.83305882  0.01 ]
+         inputs-> ndarray(784,) float64   [0.01  0.01 ...... 0.538  0.99223529, 0.99223529 0.99223529 0.83305882  0.01 ]
         """
         inputs = (numpy.asfarray(all_values[1:])) / 255.0 * 0.99 + 0.01
         '''
         设置图片与数值的对应关系, 最外层有10个输出节点
         创建一个全0数组 +0.01 最小值为0.01 , 浮点数更准确(自定义)
-              ndarray=(10,)   [0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01]
+              ndarray=(10,) float64   [0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01]
         '''
         targets = numpy.zeros(output_nodes) + 0.01
         """
         all_values[0] 标签列, 将数字变成one-hot
             如：   all_values[0] 是标签 5 
-               =》 [0.01 0.01 0.01 0.01 0.01 0.99 0.01 0.01 0.01 0.01]
+               => [0.01 0.01 0.01 0.01 0.01 0.99 0.01 0.01 0.01 0.01]
         """
         targets[int(all_values[0])] = 0.99
         """
@@ -297,22 +313,23 @@ for e in range(epochs):
         确定中间层神经元节点数最好的办法是实验，不停的选取各种数量，看看那种数量能使得网络的表现最好。
         """
         n.train(inputs, targets)
+
 # test可以更新数据集
 test_data_file = open("dataset/mnist_test.csv")
 test_data_list = test_data_file.readlines()
 test_data_file.close()
 scores = []
 for record in test_data_list:
-    all_values = record.split(',')
-    correct_number = int(all_values[0])
+    all_values = record.split(',')  # {list:785}
+    correct_number = int(all_values[0])  # 标签 7
     print("该图片对应的数字为:", correct_number)
     # 预处理数字图片
-    inputs = (numpy.asfarray(all_values[1:])) / 255.0 * 0.99 + 0.01
-    # 让网络判断图片对应的数字
-    outputs = n.query(inputs)
+    inputs = (numpy.asfarray(all_values[1:])) / 255.0 * 0.99 + 0.01  # ndarray=(784,)
+    # 让网络判断图片对应的数字                                                                                                        最大值
+    outputs = n.query(inputs)  # ndarray=(10,)  [0.03201441 0.00895707 0.07200196 0.04570989 0.03204152 0.08157242, 0.00987281 0.85602644 0.10199715 0.06305355]
     # 找到数值最大的神经元对应的编号
-    label = numpy.argmax(outputs)
-    print("网络认为图片的数字是：", label)
+    label = numpy.argmax(outputs)  # 7
+    print("网络认为图片的数字是：", label)  # 7
     if label == correct_number:
         scores.append(1)
     else:
@@ -320,11 +337,15 @@ for record in test_data_list:
 print(scores)
 '''
 该图片对应的数字为: 7
-[0.05204647 0.01475931 0.03139924 0.06658749 0.04010123 0.03269264 0.00822899 0.84458636 0.11468105 0.03794511]
- ......
- 该图片对应的数字为: 9
-[0.01809123 0.06122978 0.02190612 0.07735107 0.23985984 0.02849815 0.0985953  0.05805864 0.06266274 0.08017536]
+[0.03201441 0.00895707 0.07200196 0.04570989 0.03204152 0.08157242
+ 0.00987281 0.85602644 0.10199715 0.06305355]
+网络认为图片的数字是： 7
+...
+该图片对应的数字为: 5
+[0.05762162 0.24140578 0.15983665 0.00385813 0.48310617 0.02444082
+ 0.03627164 0.01769473 0.03231133 0.00571843]
 网络认为图片的数字是： 4
+...
 '''
 
 # 计算图片判断的成功率

@@ -4,7 +4,7 @@
 # 方法1
 """
 这段代码定义了一个包含两个全连接层和一个 Softmax 输出层的简单神经网络模型：
-    1. `nn.Sequential()`：创建一个空的神经网络模型容器。
+    1. `nn.Sequential()`：创建一个空的神经网络模型容器, 按照顺序将多个神经网络模块组合在一起。
     2. `model.add_module('fc1', nn.Linear(3, 4))`：向模型中添加第一个全连接层。`fc1` 是该层的名称，`nn.Linear(3, 4)` 表示该层的输入维度为 3，输出维度为 4。
     3. `model.add_module('fc2', nn.Linear(4, 2))`：向模型中添加第二个全连接层。`fc2` 是该层的名称，`nn.Linear(4, 2)` 表示该层的输入维度为 4，输出维度为 2。
     4. `model.add_module('output', nn.Softmax(2))`：向模型中添加 Softmax 输出层。`output` 是该层的名称，`nn.Softmax(2)` 表示该层的输出维度为 2。

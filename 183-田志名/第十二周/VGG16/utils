@@ -1,0 +1,24 @@
+import numpy as np
+import tensorflow.compat.v1 as tf
+
+tf.disable_v1_behavior()
+def resize_image(image, size,
+                 method=tf.image.ResizeMethod.BILINEAR,
+                 align_corners=False):
+    with tf.name_scope('resize_image'):
+        image = tf.expand_dims(image, 0)
+        image = tf.image.resize_images(image, size,
+                                       method, align_corners)
+        image = tf.reshape(image, tf.stack([-1,size[0], size[1], 3]))
+        return image
+
+def print_prob(prob, file_path):
+    synset = [l.strip() for l in open(file_path).readlines()]   #l.strip()用于去除字符串两端的空白字符（包括空格、换行符和制表符），切片操作符[start:stop:step]用于从序列（如列表、字符串或元组）中提取一部分元素。
+    # 将概率从大到小排列的结果的序号存入pred
+    pred = np.argsort(prob)[::-1]   #np.argsort返回从小到大排列的数组的下标,[::-1]用于将这个数组反转，即从大到小排列的下标
+    # 取最大的1个、5个。
+    top1 = synset[pred[0]]
+    print(("Top1: ", top1, prob[pred[0]]))
+    top5 = [(synset[pred[i]], prob[pred[i]]) for i in range(5)]
+    print(("Top5: ", top5))
+    return top1

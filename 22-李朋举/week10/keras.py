@@ -3,14 +3,16 @@
 from matplotlib import pyplot as plt
 from tensorflow.keras.datasets import mnist
 
+
 (train_images, train_labels), (test_images, test_labels) = mnist.load_data()
 '''
 将训练数据和检测数据加载到内存中(第一次运行需要下载数据，会比较慢):
 1.train_images是用于训练系统的手写数字图片:
-     train_images.shape -> (60000, 28, 28)，train_images是一个含有60000个元素(图片)的数组.数组中的元素是一个二维数组，二维数组的行和列都是28.
+     train_images.shape -> (60000, 28, 28) unit8   train_images是一个含有60000个元素(图片)的数组.数组中的元素是一个二维数组，二维数组的行和列都是28.
                             也就是说，一个数字图片的大小是28*28.
 train_labels是用于标注图片的信息;
-     train_lables -> [5 0 4 ... 5 6 8] 第一张手写数字图片的内容是数字5，第二种图片是数字0，以此类推.
+     train_lables -> (60000,) unit8   [5 0 4 ... 5 6 8] 第一张手写数字图片的内容是数字5，第二种图片是数字0，以此类推.
+     
 test_images是用于检测系统训练效果的图片；
      test_images.shape ->  (10000, 28, 28)  用于检验训练效果的图片有10000张
 test_labels是test_images图片对应的数字标签。
@@ -26,8 +28,22 @@ from tensorflow.keras import layers
    models.Sequential():表示把每一个数据处理层串联起来. 按顺序添加神经网络的各个层，而无需显式地定义模型的结构。可以方便地将多个层堆叠在一起，形成一个深度学习模型。
 '''
 network = models.Sequential()
+"""
+这个模型属于全连接神经网络：
+    在这个模型中，`network.add(layers.Dense(512, activation='relu', input_shape=(28 * 28,)))` 这一层是一个全连接层，它将输入的维度为 `28 * 28` 的数据与 512 个神经元进行全连接。`
+    network.add(layers.Dense(10, activation='softmax'))` 这一层也是一个全连接层，它将上一层的输出与 10 个神经元进行全连接，并使用 `softmax` 激活函数进行分类预测。
+
+    全连接神经网络的特点是每个神经元都与前一层的所有神经元相连，这种连接方式可以捕捉输入数据中的全局特征，但对于高维数据可能会存在参数过多的问题。
+    相比之下，卷积神经网络（Convolutional Neural Network，CNN）通常在图像识别等任务中表现出色，它利用卷积核在输入数据上进行滑动窗口操作，以提取局部特征，从而减少了参数数量。
+    判断一个神经网络是否为全连接，可以根据以下几个特征：
+        连接方式：在全连接神经网络中，每一个神经元都与前一层的所有神经元相连。也就是说，对于每一个神经元，它的输入来自于前一层的所有神经元的输出。
+        权重矩阵：全连接神经网络的权重矩阵是一个二维矩阵，其行数等于当前层的神经元数量，列数等于前一层的神经元数量。
+        计算过程：在全连接神经网络中，计算当前层的神经元输出时，需要将前一层的所有神经元输出与对应的权重相乘，然后将结果相加，再加上偏置项。  
+"""
+
 '''
-Dense - 密集的
+layers.Dense 是 TensorFlow 中的一个层类，它表示一个完全连接的神经网络层
+
 使用 TensorFlow 的 API（Keras）来定义一个神经网络模型时，向模型中添加一个密集连接层（全连接层）的操作。
     `network.add(layers.Dense(512, activation='relu'， input_shape=(28*28,)))`: 
           `network` 是之前创建的 Sequential 模型对象，`add()` 方法用于向模型中添加新的层。
@@ -37,12 +53,36 @@ Dense - 密集的
 总体来说，这行代码的作用是在模型中添加一个具有 512 个神经元的密集连接层(隐藏层)，该层的输入形状为 28x28 的二维张量，这个层将对输入数据进行特征提取和非线性变换。
                 输入         隐藏层
                28X28         512   
+        
+    inputs ->   [<tf.Tensor 'dense_input:0'    shape=(?, 784)   dtype=float32>],   dtype=float32)  
+    weigths->   [<tf.Variable 'dense/kernel:0' shape=(784, 512) dtype=float32>,    <tf.Variable 'dense/bias:0' shape=(512,) dtype=float32>]
+    outputs ->  [<tf.Tensor 'dense/Relu:0'     shape=(?, 512)   dtype=float32>]
 '''
 network.add(layers.Dense(512, activation='relu', input_shape=(28 * 28,)))
 '''
 在模型中添加一个具有 10 个神经元的密集连接层    ( 多分类-数字0-9 对应 10个类别(10个节点)   二分类-0或1  对应 2个类别(2个节点)  )
-                输入         隐藏层      输出层
-               28X28         512        10
+                    输入                      隐藏层                       输出层
+                 28X28(784)                   512                         10
+   
+                  inputs                hidden_outputs                final_outputs
+                  (784,1)                 (512，1)                      (10，1)
+                                          zh1/ah1                       zo1/ao1
+                            self.wih                     self.who
+                           (512，784)                     (10,512)
+                           
+    inputs ->   [<tf.Tensor   'dense_input:0'     shape=(?, 784)    dtype=float32>],   dtype=float32)  
+    weigths->   [<tf.Variable 'dense/kernel:0'    shape=(784, 512)  dtype=float32>,    <tf.Variable 'dense/bias:0' shape=(512,) dtype=float32>]
+    outputs->   [<tf.Tensor   'dense_1/Softmax:0' shape=(?, 10)     dtype=float32>]
+
+   shape=(?, 784): 第一个维度是 ?，表示该维度的大小可以是任意正整数，也就是说，这个张量可以有任意数量的样本。
+                   第二个维度是 784，表示每个样本的特征数量为 784   二维的（例如灰度图像）-> (width, height)。  三维的（例如彩色图像）-> (width, height, channels)
+                        
+                  如果彩色图像的 shape 为 (height, width, channels)，那么可以将上面的式子修改为：
+                        <tf.Tensor 'dense_input:0' shape=(?, height, width, channels) dtype=float32>], dtype=float32)
+                        在这个修改后的式子中：
+                        height：表示图像的高度，即图像在垂直方向上的像素数量。
+                        width：表示图像的宽度，即图像在水平方向上的像素数量。
+                        channels：表示图像的颜色通道数，通常为 3 或 4。3 表示 RGB 颜色模式，4 表示 RGBA 颜色模式（其中 A 表示透明度）。
 '''
 network.add(layers.Dense(10, activation='softmax'))
 '''

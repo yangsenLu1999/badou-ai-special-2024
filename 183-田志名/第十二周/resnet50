@@ -1,0 +1,124 @@
+from __future__ import print_function  # 在python3的版本中启用 Python 2.x 的 print 函数语法
+import numpy as np
+from keras import layers
+from keras.layers import Input
+from keras.layers import Dense, Conv2D, MaxPooling2D, AveragePooling2D, ZeroPadding2D
+from keras.layers import Activation, BatchNormalization, Flatten
+from keras.models import Model
+
+from keras.preprocessing import image
+from keras.applications.imagenet_utils import decode_predictions
+from keras.applications.imagenet_utils import preprocess_input
+
+
+def conv_block(input_tensor, kernel_size, filters, stage, block, strides=(2, 2)):
+    filters1, filters2, filters3 = filters
+    conv_name_base = 'res' + str(stage) + block + '_branch'
+    bn_name_base = 'bn' + str(stage) + block + '_branch'
+
+    x = Conv2D(filters1, (1, 1), strides=strides, name=conv_name_base + '2a')(input_tensor)
+    x = BatchNormalization(name=bn_name_base + '2a')(x)
+    x = Activation('relu')(x)
+
+    x = Conv2D(filters2, kernel_size, padding='same', name=conv_name_base + '2b')(x)
+    x = BatchNormalization(name=bn_name_base + '2b')(x)
+    x = Activation('relu')(x)
+
+    x = Conv2D(filters3, (1, 1), name=conv_name_base + '2c')(x)
+    x = BatchNormalization(name=bn_name_base + '2c')(x)
+
+    shortcut = Conv2D(filters3, (1, 1), strides=strides, name=conv_name_base + '1')(input_tensor)
+    shortcut = BatchNormalization(name=bn_name_base + '1')(shortcut)
+
+    x = layers.add([x, shortcut])
+    x = Activation('relu')(x)
+    return x
+
+
+def identity_block(input_tensor, kernel_size, filters, stage, block):
+    filters1, filters2, filters3 = filters
+    conv_name_base = 'res' + str(stage) + block + '_branch'
+    bn_name_base = 'bn' + str(stage) + block + '_branch'
+
+    x = Conv2D(filters1, (1, 1), name=conv_name_base + '2a')(input_tensor)
+    x = BatchNormalization(name=bn_name_base + '2a')(x)
+    x = Activation('relu')(x)
+
+    x = Conv2D(filters2, kernel_size, padding='same', name=conv_name_base + '2b')(x)
+    x = BatchNormalization(name=bn_name_base + '2b')(x)
+    x = Activation('relu')(x)
+
+    x = Conv2D(filters3, (1, 1), name=conv_name_base + '2c')(x)
+    x = BatchNormalization(name=bn_name_base + '2c')(x)
+
+    x = layers.add([x, input_tensor])
+    x = Activation('relu')(x)
+    return x
+
+
+def ResNet50(input_shape=[224, 224, 3], classes=1000):
+    img_input = Input(shape=input_shape)  # Keras的layers.Input函数用于创建模型的输入层，并定义输入张量的形状和其他属性。
+    x = ZeroPadding2D((3, 3))(img_input)  # 填充，相当于后面的padding=same
+    x = Conv2D(64, (7, 7), strides=(2, 2), name='conv1')(x)  # 112*112*64
+    x = BatchNormalization(name='bn_conv1')(x)  # BatchNormalization(name='bn_conv1')是实例化这个类，然后再传值进去
+    x = Activation('relu')(x)
+    x = MaxPooling2D((3, 3), strides=(2, 2))(x)  # 55*55*64
+
+    # 第一个残差块
+    x = conv_block(x, 3, [64, 64, 256], stage=2, block='a', strides=(1, 1))# (55, 55, 256)
+    x = identity_block(x, 3, [64, 64, 256], stage=2, block='b')
+    x = identity_block(x, 3, [64, 64, 256], stage=2, block='c')  # (55, 55, 256)
+
+    # 第二个残差块
+    x = conv_block(x, 3, [128, 128, 512], stage=3, block='a')  # (28, 28, 512)
+    x = identity_block(x, 3, [128, 128, 512], stage=3, block='b')
+    x = identity_block(x, 3, [128, 128, 512], stage=3, block='c')
+    x = identity_block(x, 3, [128, 128, 512], stage=3, block='d')  # (28, 28, 512)
+
+    # 第三个残差块
+    x = conv_block(x, 3, [256, 256, 1024], stage=4, block='a')   # (14, 14, 1024)
+    x = identity_block(x, 3, [256, 256, 1024], stage=4, block='b')
+    x = identity_block(x, 3, [256, 256, 1024], stage=4, block='c')
+    x = identity_block(x, 3, [256, 256, 1024], stage=4, block='d')
+    x = identity_block(x, 3, [256, 256, 1024], stage=4, block='e')
+    x = identity_block(x, 3, [256, 256, 1024], stage=4, block='f')  # (14, 14, 1024)
+
+    # 第四个残差块
+    x = conv_block(x, 3, [512, 512, 2048], stage=5, block='a')   # 7*7*2048
+    x = identity_block(x, 3, [512, 512, 2048], stage=5, block='b')
+    x = identity_block(x, 3, [512, 512, 2048], stage=5, block='c')  # 7*7*2048
+
+    x = AveragePooling2D((7, 7), name='avg_pool')(x)     #1*1*2048
+    x = Flatten()(x)
+    x = Dense(classes, activation='softmax', name='fc1000')(x)
+
+    model = Model(img_input, x, name='resnet50')
+    model.load_weights("resnet50_weights_tf_dim_ordering_tf_kernels.h5")
+    return model
+
+
+if __name__ == "__main__":
+    model = ResNet50()
+    model.summary()
+    img_path = 'elephant.jpg'
+    img = image.load_img(img_path, target_size=(224, 224))  # 用keras.preprocessing中的image.load_img加载图像
+    x = image.img_to_array(img)
+    x = np.expand_dims(x, axis=0)  # 相当于batch_size的值为1
+    x = preprocess_input(x)  # 对输入数据进行预处理
+
+    print('Input image shape:', x.shape)
+    preds = model.predict(x)
+    print('Predicted:', decode_predictions(preds,top=5))
+
+    '''
+    preprocess_input(x) 
+    x: 输入图像数据，通常是一个形状为 (height, width, channels) 的 NumPy 数组或一个 PIL 图像对象。
+    mode: 预处理模式，可以是 'tf'（TensorFlow 模式）或 'caffe'（Caffe 模式）。默认值为 'caffe'。
+    在 TensorFlow 模式下，preprocess_input 函数会执行以下操作：
+        将图像数据从 [0, 255] 缩放到 [-1, 1] 范围。如果图像是彩色的（即通道数大于1），则减去每个通道的均值并除以标准差。
+        对于 ImageNet 数据集，这些值分别为 BGR 通道的 [103.939, 116.779, 123.68] 和 [1, 1, 1]。
+    在 Caffe 模式下，preprocess_input 函数会执行以下操作：
+        将图像数据从 [0, 255] 缩放到 [0, 1] 范围。
+        如果图像是彩色的（即通道数大于1），则减去每个通道的均值并除以标准差。对于 ImageNet 数据集，
+        这些值分别为 BGR 通道的 [103.939, 116.779, 123.68] 和 [1, 1, 1]。
+    '''
