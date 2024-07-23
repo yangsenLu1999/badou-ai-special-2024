@@ -104,11 +104,44 @@ def conv_block(input_tensor, kernel_size, filters, stage, block, strides=(2, 2))
     return x
 
 
+'''
+ResNet50:
+   input -> Zeropad -> Conv2D -> BN -> ReLU -> MaxPool 
+         ->  Conv Block - Identity Block - Identity Block 
+         ->  Conv Block - Identity Block - Identity Block - Identity Block 
+         ->  Conv Block - Identity Block - Identity Block - Identity Block - Identity Block - Identity Block
+         ->  Conv Block - Identity Block - Identity Block
+         ->  AveragePooling2D
+         -> FC 
+         -> out
+'''
 def ResNet50(input_shape=[224,224,3],classes=1000):
 
+    """
+    `Input()` 函数是 Keras 中的一个函数，用于定义模型的输入层。它接受一些参数来指定输入的形状和其他属性。
+    `shape=input_shape` 表示输入的形状将与之前定义的 `input_shape` 相同。`input_shape` 通常是一个三元组，例如 `(224, 224, 3)`，表示图像的高度、宽度和通道数。
+    通过定义输入层，我们可以将图像数据传递给后续的神经网络层进行处理和分析。
+    """
     img_input = Input(shape=input_shape)
+    '''
+    使用Keras 中的 `ZeroPadding2D` 层对输入图像 `img_input` 进行了零填充。
+    `ZeroPadding2D` 层的作用是在输入图像的周围添加一定数量的零像素，从而增加图像的大小。在这个例子中，`(3, 3)` 表示在图像的高度和宽度方向上都添加 3 个零像素。
+    零填充可以在一定程度上防止卷积操作导致的图像尺寸减小，同时也可以帮助模型更好地学习图像的边界信息。
+    '''
     x = ZeroPadding2D((3, 3))(img_input)
 
+    '''
+    定义了一个卷积神经网络（CNN）的一部分，其中包含了卷积层、批量归一化层、激活函数和最大池化层。    
+    1. `x = Conv2D(64, (7, 7), strides=(2, 2), name='conv1')(x)`: 这行代码定义了一个卷积层。`Conv2D` 函数用于创建卷积层，它接受几个参数：
+        - `64`：表示卷积核的数量，即输出的特征图数量。
+        - `(7, 7)`：表示卷积核的大小。
+        - `strides=(2, 2)`：表示卷积的步长。
+        - `name='conv1'`：为该层命名，方便在模型中进行引用。
+    2. `x = BatchNormalization(name='bn_conv1')(x)`: 这行代码添加了一个批量归一化层。批量归一化是一种常见的神经网络层，用于对每个小批量的数据进行标准化处理，以加速训练并提高模型的稳定性。
+    3. `x = Activation('relu')(x)`: 这行代码应用了一个 ReLU 激活函数。ReLU 激活函数是一种常用的激活函数，它将输入值限制在 0 到正无穷之间，有助于缓解神经网络中的梯度消失问题。
+    4. `x = MaxPooling2D((3, 3), strides=(2, 2))(x)`: 这行代码定义了一个最大池化层。最大池化层用于对特征图进行下采样，通过选择每个区域内的最大值来减少特征图的尺寸，从而降低计算量并提取主要特征。
+    综上所述，这段代码定义了一个包含卷积、批量归一化、ReLU 激活和最大池化的神经网络层序列。这样的层序列在 CNN 中常用于提取图像的特征，并逐渐减小特征图的尺寸，以便后续的处理。
+    '''
     x = Conv2D(64, (7, 7), strides=(2, 2), name='conv1')(x)
     x = BatchNormalization(name='bn_conv1')(x)
     x = Activation('relu')(x)
@@ -136,11 +169,33 @@ def ResNet50(input_shape=[224,224,3],classes=1000):
     x = identity_block(x, 3, [512, 512, 2048], stage=5, block='b')
     x = identity_block(x, 3, [512, 512, 2048], stage=5, block='c')
 
+    '''
+    对输入数据 `x` 进行了平均池化操作：
+    `AveragePooling2D` 层的作用是对输入数据进行下采样，通过计算每个区域内的平均值来减少数据的维度。在这个例子中，`(7, 7)` 表示池化区域的大小，即对输入数据进行 7x7 的平均池化。
+    平均池化操作可以帮助模型降低对输入数据中细节的敏感度，提取更具代表性的特征。它常用于图像分类等任务中，以减少输入数据的维度并增加模型的鲁棒性。
+    '''
     x = AveragePooling2D((7, 7), name='avg_pool')(x)
 
-    x = Flatten()(x)
+    '''
+    使用了 Keras 中的 `Flatten` 层将输入数据 `x` 展平为一维向量:
+    `Flatten` 层的作用是将输入数据的维度从多维转换为一维。它将输入数据中的每个样本展平为一个一维向量，以便后续的全连接层或其他层进行处理。
+    展平操作通常在卷积神经网络（CNN）的最后一层或在需要将多维数据转换为一维向量的情况下使用。通过将数据展平为一维向量，可以方便地与全连接层或其他需要一维输入的层进行连接。
+    '''
+    x = Flatten()(x) # 使用了 Keras 中的 Flatten 层将输入数据 x 展平为一维向量
+    '''
+   定义了一个全连接层（Dense Layer），用于将输入数据与输出数据进行连接：
+    1. `x = Dense(classes, activation='softmax', name='fc1000')(x)`: 这行代码创建了一个全连接层。
+        - `classes` 表示输出的类别数。在这个例子中，`classes` 可能是你要预测的类别数量。
+        - `activation='softmax'` 指定了激活函数为 Softmax 函数。Softmax 函数通常用于多类别分类问题，它将输入值转换为概率分布，表示每个类别出现的可能性。
+        - `name='fc1000'` 为该层命名，方便在模型中进行引用。
+    通过将全连接层应用于输入数据 `x`，模型可以学习输入数据与输出类别之间的复杂关系，并进行分类或回归任务。
+    '''
     x = Dense(classes, activation='softmax', name='fc1000')(x)
 
+    '''
+    创建了一个 Keras 模型，将输入图像 `img_input` 和经过一系列处理后的输出 `x` 关联起来，并为模型指定了一个名称 `resnet50`。
+    在这个模型中，`img_input` 是输入层，它接收图像数据。`x` 是经过一系列卷积、池化、归一化等操作后的输出。通过将这两个部分连接起来，形成了一个完整的神经网络模型。    
+    '''
     model = Model(img_input, x, name='resnet50')
 
     model.load_weights("resnet50_weights_tf_dim_ordering_tf_kernels.h5")
@@ -159,6 +214,7 @@ if __name__ == '__main__':
     通过查看模型的摘要，你可以了解模型的架构、参数数量以及输入输出的要求。这对于理解模型的复杂性、检查模型的配置是否正确以及进行模型的调试和优化都非常有帮助。    
     '''
     model.summary()  # 使用 model.summary() 来获取模型的结构和参数信息的摘要
+
     img_path = 'elephant.jpg'
     # img_path = 'bike.jpg'
     img = image.load_img(img_path, target_size=(224, 224))
@@ -171,16 +227,26 @@ if __name__ == '__main__':
     3. 数据类型：`x` 的数据类型通常是 `numpy.uint8` 或类似的整数类型。
     在后续的代码中，你可以对转换后的数组 `x` 进行各种操作，例如数据预处理、特征提取、模型训练等。
     '''
-    x = image.img_to_array(img)
+    x = image.img_to_array(img)  # ndarray(224，224，3)
     '''
     使用 NumPy 库的 `expand_dims` 函数在数组 `x` 的指定轴（axis）上添加一个新的维度。
     在这个例子中，`axis=0` 表示在数组的第一个维度（通常是行维度）上添加一个新的维度。
     执行这行代码后，数组 `x` 的维度将增加 1，例如，如果 `x` 原本是一个二维数组，那么现在它将变成一个三维数组。
     添加新的维度通常是为了满足某些操作或算法的要求，例如在深度学习中，模型可能需要输入具有特定维度的张量。通过使用 `expand_dims` 函数，我们可以方便地在数组上添加或删除维度，以适应不同的计算需求。
     '''
-    x = np.expand_dims(x, axis=0)
+    x = np.expand_dims(x, axis=0)  # ndarray(1,224，224，3)
     x = preprocess_input(x)
 
     print('Input image shape:', x.shape)
     preds = model.predict(x)
     print('Predicted:', decode_predictions(preds))
+
+    '''             编号                名称            概率                top5 
+    Predicted: [ 
+                [('n02504458', 'African_elephant', 0.76734424), 
+                 ('n01871265', 'tusker', 0.19938569),
+                 ('n02504013', 'Indian_elephant', 0.032160413),
+                 ('n02410509', 'bison', 0.0005231188), 
+                 ('n02408429', 'water_buffalo', 0.00030515814)]
+                ]
+    '''

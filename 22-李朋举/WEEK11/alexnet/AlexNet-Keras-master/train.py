@@ -164,7 +164,20 @@ if __name__ == "__main__":
 
     '''
     在科学计算和数据分析中，大规模数据集的存储和管理是一个重要的问题。HDF5（Hierarchical Data Format version 5）是一种用于存储和组织大型数据集的文件格式。
-    Python 的 h5py 库是一个用于与 HDF5 文件交互的接口，它结合了 HDF5 的强大功能和 Python 的易用性，使得处理大型数据集变得更加方便和高效            
+    Python 的 h5py 库是一个用于与 HDF5 文件交互的接口，它结合了 HDF5 的强大功能和 Python 的易用性，使得处理大型数据集变得更加方便和高效  
+    import h5py
+    # 打开hdf5文件
+    hdf5_file = h5py.File('./logs/last1.h5', 'r')
+    # 查看文件结构
+    print(hdf5_file.keys())
+    # 读取数据集
+    dataset = hdf5_file['batch_normalization_1']
+    # <KeysViewHDF5 ['batch_normalization_1', 'batch_normalization_2', 'conv2d_1', 'conv2d_2', 'conv2d_3', 'conv2d_4', 'conv2d_5', 'dense_1', 'dense_2', 'dense_3', 'dropout_1', 'dropout_2', 'flatten_1', 'max_pooling2d_1', 'max_pooling2d_2', 'max_pooling2d_3']>
+    data = dataset[()]
+    # 打印数据
+    print(data)
+    # 关闭hdf5文件
+    hdf5_file.close()          
     '''
 
 
