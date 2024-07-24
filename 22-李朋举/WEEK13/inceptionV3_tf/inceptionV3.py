@@ -67,7 +67,7 @@ def InceptionV3(input_shape=[299, 299, 3], classes=1000):
     x = MaxPooling2D((3, 3), strides=(2, 2))(x)
 
     # ---------------------------------------#
-    #   Block1 35x35
+    #   Block1 35x35 (尺寸没变，通道数改变)
     #
     #   35 x 35 x 192  -> 35 x 35 x 288
     # ---------------------------------------#
@@ -280,7 +280,7 @@ def InceptionV3(input_shape=[299, 299, 3], classes=1000):
             [branch1x1, branch3x3, branch3x3dbl, branch_pool],
             axis=3,
             name='mixed' + str(9 + i))
-    # 平均池化后全连接。
+    # 平均池化后全连接。(效果 flatten + pooling)
     x = GlobalAveragePooling2D(name='avg_pool')(x)
     x = Dense(classes, activation='softmax', name='predictions')(x)
 
