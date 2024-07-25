@@ -14,6 +14,20 @@ import time
 import tensorflow as tf
 from utils.anchors import get_anchors
 
+"""
+训练输出说明：
+ 148/2000 [=>............................] - ETA: 3:49:24 - rpn_cls: 8.5973 - rpn_regr: 1.3285 - detector_cls: 2.6863 - detector_regr: 1.6785
+ 149/2000 [=>............................] - ETA: 3:49:12 - rpn_cls: 8.5801 - rpn_regr: 1.3268 - detector_cls: 2.6836 - detector_regr: 1.6784
+ 150/2000 [=>............................] - ETA: 3:49:04 - rpn_cls: 8.5630 - rpn_regr: 1.3252 - detector_cls: 2.6810 - detector_regr: 1.6783
+ 151/2000 [=>............................] - ETA: 3:48:51 - rpn_cls: 8.5459 - rpn_regr: 1.3235 - detector_cls: 2.6784 - detector_regr: 1.6782
+ 152/2000 [=>............................] - ETA: 3:48:36 - rpn_cls: 8.5289 - rpn_regr: 1.3218 - detector_cls: 2.6758 - detector_regr: 1.6780
+ 153/2000 [=>............................] - ETA: 3:48:28 - rpn_cls: 8.5121 - rpn_regr: 1.3201 - detector_cls: 2.6732 - detector_regr: 1.6779
+ 154/2000 [=>............................] - ETA: 3:48:25 - rpn_cls: 8.4953 - rpn_regr: 1.3185 - detector_cls: 2.6706 - detector_regr: 1.6778
+ 155/2000 [=>............................] - ETA: 3:48:07 - rpn_cls: 8.4787 - rpn_regr: 1.3167 - detector_cls: 2.6680 - detector_regr: 1.6776
+ 156/2000 [=>............................] - ETA: 3:48:07 - rpn_cls: 8.4622 - rpn_regr: 1.3151 - detector_cls: 2.6654 - detector_regr: 1.6775
+                                                打印值分别代表：RPN分类损失、       边框偏移量损失、      分类网络分类损失、        分类网络边框偏移量损失
+"""
+
 
 def write_log(callback, names, logs, batch_no):
     """
