@@ -39,10 +39,11 @@ if __name__ == "__main__":
     # model_rpn.load_weights(base_net_weights,by_name=True)
     # model_classifier.load_weights(base_net_weights,by_name=True)
     #加载训练一次的权重
-    loadModel = model_all.load_weights("logs/epoch000-loss3.615-rpn1.710-roi1.905.h5",by_name=True,skip_mismatch=True)
-    print("Load weights from ",loadModel)
-
-
+    loadModel = model_all.load_weights("logs/epoch000-loss3.615-rpn1.710-roi1.905.h5", by_name=True, skip_mismatch=True)
+    if loadModel is not None:
+        print("Weights loaded successfully from logs/epoch000-loss3.615-rpn1.710-roi1.905.h5")
+    else:
+        print("Failed to load weights")
 
 
     with open(annotation_path) as f: 
@@ -215,3 +216,5 @@ if __name__ == "__main__":
                 model_all.save_weights(log_dir+"/epoch{:03d}-loss{:.3f}-rpn{:.3f}-roi{:.3f}".format(i,curr_loss,loss_rpn_cls+loss_rpn_regr,loss_class_cls+loss_class_regr)+".h5")
                 
                 break
+    print('Training complete, exiting.')
+    model_all.save_weights(log_dir+"/model_final.h5")
