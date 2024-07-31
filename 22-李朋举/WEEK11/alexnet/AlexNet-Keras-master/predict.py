@@ -10,8 +10,9 @@ K.image_data_format() == 'chnanels_first'
 if __name__ == "__main__":
     # 加载预训练的 AlexNet 模型
     model = AlexNet()
-    # 加载训练完成后存储的权重
+    # 加载训练完成后存储的权重tf.nn.max_pool
     model.load_weights("./logs/last1.h5")
+    # model.load_weights("./logs/ep039-loss0.004-val_loss0.652.h5")
     # 读取了一张图片，并将其转换为 RGB 格式
     img = cv2.imread("./Test.jpg")
     img_RGB = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
