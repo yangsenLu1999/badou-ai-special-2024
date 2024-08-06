@@ -53,8 +53,8 @@ def resize_image(image, size):
 总结起来，这个函数的作用是从指定文件中读取数据，并根据输入的索引 `argmax` 打印和返回相应的元素。
 '''
 def print_answer(argmax):
-    with open("./data/model/index_word.txt","r",encoding='utf-8') as f:
+    with open("./data/model/index_word.txt", "r", encoding='utf-8') as f:
         synset = [l.split(";")[1][:-1] for l in f.readlines()]
-        
+
     print(synset[argmax])
     return synset[argmax]
