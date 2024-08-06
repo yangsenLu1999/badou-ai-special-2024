@@ -12,27 +12,28 @@ import matplotlib.pyplot as plt
 def calculateScales(img):
     copy_img = img.copy()  # 创建一个与输入图像 img 相同的副本
     pr_scale = 1.0  # 初始化缩放比例为 1.0
-    h, w, _ = copy_img.shape  # 获取图像的高度 h、宽度 w
+    h, w, _ = copy_img.shape  # 获取图像的高度 h、宽度 w  通道 _  : origin_h -> 378  origin_w -> 499  _ -> 3
+    # 先把图像缩放到一定大小(500，500), 再通过factor对这个大小进行缩放，可以减少计算量。保证图像金字塔在一定的尺度空间内 不小于12不大于500
     # 引申优化项  = resize(h*500/min(h,w), w*500/min(h,w))
     if min(w, h) > 500:  # 如果图像的最小边长大于 500
         pr_scale = 500.0 / min(h, w)  # 计算缩放比例
         w = int(w * pr_scale)  # 将宽度乘以缩放比例进行缩(放)
         h = int(h * pr_scale)  # 将高度乘以缩放比例进行缩(放)
     elif max(w, h) < 500:
-        pr_scale = 500.0 / max(h, w)
-        w = int(w * pr_scale)
-        h = int(h * pr_scale)
+        pr_scale = 500.0 / max(h, w)  # 1.002004008016032
+        w = int(w * pr_scale)  # 499
+        h = int(h * pr_scale)  # 378
 
     scales = []  # 存储计算得到的缩放比例
     factor = 0.709  # 定义一个缩放因子 factor
     factor_count = 0  # 初始化缩放因子的计数器
-    minl = min(h, w)  # 获取图像的最小边长
+    minl = min(h, w)  # 获取图像的最小边长  378
     while minl >= 12:  # 只要最小边长大于等于 12
         # 将当前的缩放比例 pr_scale 乘以缩放因子的幂次方，并添加到 scales 列表中。 [pow(factor, factor_count) -> 计算 factor 的 factor_count 次幂]
-        scales.append(pr_scale * pow(factor, factor_count))
-        minl *= factor  # 将最小边长乘以缩放因子
-        factor_count += 1  # 递增缩放因子的计数器
-    return scales
+        scales.append(pr_scale * pow(factor, factor_count))  # {list:11} [1.002004008016032]  [1.002004008016032, 0.7104208416833666] ...
+        minl *= factor  # 将最小边长乘以缩放因子  268.002  190.013418 ... 8.602018789437398
+        factor_count += 1  # 递增缩放因子的计数器 1 2 .. 11
+    return scales # [1.002004008016032, 0.7104208416833666, 0.5036883767535069, 0.3571150591182364, 0.25319457691482955, 0.17951495503261417, 0.12727610311812346, 0.09023875711074951, 0.06397927879152139, 0.04536130866318867, 0.032161167842200765]
 
 
 # ---------------------------------------------------------------------------------------------------------------------------------------------------------#

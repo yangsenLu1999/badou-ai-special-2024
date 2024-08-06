@@ -15,7 +15,7 @@ import os
 # --------------------------#
 def create_Pnet(weight_path):
     # 输入（12, 12, 3）
-    input = Input(shape=[None, None, 3])
+    input = Input(shape=[None, None, 3])   # Tensor("input_1:0", shape=(?, ?, ?, 3), dtype=float32)
 
     # 添加第一个卷积层，卷积核大小为(3, 3)，输出通道数为 10，步长为 1，边界填充为valid。
     '''
@@ -28,14 +28,14 @@ def create_Pnet(weight_path):
     12x12x3 -------> (12-3+1 , 12-3+1) = (10 , 10) , 输出通道由卷积核决定, ∴ （10, 10, 10）
               1,1
     '''
-    x = Conv2D(10, (3, 3), strides=1, padding='valid', name='conv1')(input)
+    x = Conv2D(10, (3, 3), strides=1, padding='valid', name='conv1')(input)  # Tensor("conv1/BiasAdd:0", shape=(?, ?, ?, 10), dtype=float32)
     # 添加 PReLU 激活函数，共享轴为[1, 2]。
-    x = PReLU(shared_axes=[1, 2], name='PReLU1')(x)
+    x = PReLU(shared_axes=[1, 2], name='PReLU1')(x)  # Tensor("PReLU1/add:0", shape=(?, ?, ?, 10), dtype=float32)
     # 添加最大池化层，池化窗口大小为 2。
     '''
     (10/2, 10/2, 10 )
     '''
-    x = MaxPool2D(pool_size=2)(x)
+    x = MaxPool2D(pool_size=2)(x)  # Tensor("max_pooling2d_1/MaxPool:0", shape=(?, ?, ?, 10), dtype=float32)
 
     # 添加第二个卷积层，卷积核大小为(3, 3)，输出通道数为 16，步长为 1，边界填充为valid。
     '''
@@ -71,14 +71,12 @@ def create_Pnet(weight_path):
     #     f = h5py.File(weight_path, "r")
     # else:
     #     print("File path not found!")
-
     # 2. 确认文件格式
-    if h5py.is_hdf5(weight_path):
-        # 文件格式正确，进行打开操作
-        f = h5py.File(weight_path, "r")
-    else:
-        print("Invalid file format!")
-
+    # if h5py.is_hdf5(weight_path):
+    #     # 文件格式正确，进行打开操作
+    #     f = h5py.File(weight_path, "r")
+    # else:
+    #     print("Invalid file format!")
     # 3. 检查H5PY版本
     # 如果文件路径和文件格式都正确，但仍然无法打开文件，可能是H5PY库的版本与HDF5文件的版本不兼容。可以尝试升级H5PY库或降级HDF5文件版本来解决兼容性问题。
     # 升级：pip install --upgrade h5py   降级： 降级HDF5文件版本则需要使用HDF5工具进行操作
@@ -95,7 +93,7 @@ def create_Pnet(weight_path):
 # -----------------------------#
 def create_Rnet(weight_path):
     # 接收一个大小为24x24x3的输入图像
-    input = Input(shape=[24, 24, 3])
+    input = Input(shape=[24, 24, 3])  # Tensor("input_2:0", shape=(?, 24, 24, 3), dtype=float32)
 
     # 24,24,3 -> 11,11,28
     '''
@@ -159,8 +157,8 @@ def create_Onet(weight_path):
     # 4,4,64 -> 3,3,128
     x = Conv2D(128, (2, 2), strides=1, padding='valid', name='conv4')(x)
     x = PReLU(shared_axes=[1, 2], name='prelu4')(x)
-    # 3,3,128 -> 128,12,12
-    x = Permute((3, 2, 1))(x)
+    # 3,3,128 -> 128,3,3
+    x = Permute((3, 2, 1))(x)  # Tensor("permute_2/transpose:0", shape=(?, 128, 3, 3), dtype=float32)
 
     # 1152 -> 256
     x = Flatten()(x)
@@ -181,9 +179,9 @@ def create_Onet(weight_path):
 
 class mtcnn():
     def __init__(self):
-        '''
+        """
         1. 第一层P-Net将经过卷积，池化操作后输出分类（对应像素点是否存在人脸）和回归（回归box)结果。
-        '''
+        """
         self.Pnet = create_Pnet('model_data/pnet.h5')
         '''
         2. 第二层网络将第一层输出的结果使用非极大抑制（NMS）来去除高度重合的候选框，并将这些候选框放入R-Net中进行精细的操作，拒绝大量错误框，
@@ -204,31 +202,36 @@ class mtcnn():
         #   归一化，加快收敛速度
         #   把[0,255]映射到(-1,1)
         # -----------------------------#
-        copy_img = (img.copy() - 127.5) / 127.5
-        origin_h, origin_w, _ = copy_img.shape
+        copy_img = (img.copy() - 127.5) / 127.5  # (378,499,3) [[[-0.12156863 -0.1372549  -0.1372549 ], ...
+        origin_h, origin_w, _ = copy_img.shape  # origin_h -> 378  origin_w -> 499  _ -> 3
         # -----------------------------#
         #   计算原始输入图像
         #   每一次缩放的比例
         # -----------------------------#
-        scales = utils.calculateScales(img)
+        scales = utils.calculateScales(img)  # {list:11} [1.002004008016032, 0.7104208416833666, 0.5036883767535069, 0.3571150591182364, 0.25319457691482955, 0.17951495503261417, 0.12727610311812346, 0.09023875711074951, 0.06397927879152139, 0.04536130866318867, 0.032161167842200765]
 
         out = []
-        # -----------------------------------------------------------------------------------#
+        # -----------------------------------------------------------------------------------------#
         #   粗略计算人脸框
         #   pnet部分
-        #   Pnet 输出的矩形框和置信度得分只是初步的检测结果 - 矩形框（Bounding Boxes）和对应的置信度得分
-        # -----------------------------------------------------------------------------------#
-        for scale in scales:
-            hs = int(origin_h * scale)  # 计算原始图像的高度 origin_h 和宽度 origin_w 乘以当前缩放比例 scale 后的新高度 hs
-            ws = int(origin_w * scale)  # 新宽度 ws
-            scale_img = cv2.resize(copy_img, (ws, hs))  # 将复制的图像 copy_img 调整大小为新的宽度和高度，得到 scale_img
-            inputs = scale_img.reshape(1, *scale_img.shape)  # 重塑为一个形状为 (1, *scale_img.shape) 的输入数组 inputs
+        #   Pnet 第一层P-Net将经过卷积，池化操作后输出分类（对应像素点是否存在人脸）和回归（回归box)结果
+        # -----------------------------------------------------------------------------------------#
+        for scale in scales:  # 1.002004008016032
+            hs = int(origin_h * scale)  # 计算原始图像的高度 hs  378 * 1.002004008016032 ≈ 378
+            ws = int(origin_w * scale)  # 新宽度 ws  499
+            scale_img = cv2.resize(copy_img, (ws, hs))  # 将复制的图像 copy_img 调整大小为新的宽度和高度，得到 scale_img (378,499,3)
+            inputs = scale_img.reshape(1, *scale_img.shape)  # 重塑为一个形状为 (1, *scale_img.shape) 的输入数组 inputs (1,378,499,3)
             # 图像金字塔中的每张图片分别传入Pnet得到output [一系列的矩形框（Bounding Boxes）和对应的置信度得分（Confidence Scores）] ?
             output = self.Pnet.predict(inputs)
-            # 将所有output加入out
+            '''
+            {list:2}
+              分类（对应像素点是否存在人脸）-> (1,184,244,2) [[[[0.9951456  0.00485442],   [0.99255896 0.00744099], 
+              回归（回归box) -> (1,184,244,4) [[[[-0.0249768   0.01182976 -0.01099911  0.3040731 ],   [-0.0371667   0.00759065 -0.02612752  0.2954429 ], 
+            '''
+            # 将所有output加入out {list:11}
             out.append(output)
 
-        image_num = len(scales)  # 缩放比例列表
+        image_num = len(scales)  # 缩放比例列表  11
         rectangles = []  # 存储检测到的人脸矩形框
         for i in range(image_num):  # 遍历缩放比例列表中的每个元素
             # 有人脸的概率

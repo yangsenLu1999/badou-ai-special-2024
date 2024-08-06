@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from mtcnn import mtcnn
 
-img = cv2.imread('img/test1.jpg')
+img = cv2.imread('img/test1.jpg')  # (378,499,3)
 
 model = mtcnn()
 threshold = [0.5,0.6,0.7]  # 三段网络的置信度阈值不同
