@@ -4,6 +4,7 @@ import tensorflow as tf
 from PIL import Image
 from collections import defaultdict
 
+
 def load_weights(var_list, weights_file):
     """
     Introduction
@@ -69,6 +70,9 @@ def load_weights(var_list, weights_file):
     return assign_ops
 
 
+# ----------------------------------------------------#
+#   对预测输入图像进行缩放，按照长宽比进行缩放，不足的地方进行填充
+# ----------------------------------------------------#
 def letterbox_image(image, size):
     """
     Introduction
@@ -76,20 +80,49 @@ def letterbox_image(image, size):
         对预测输入图像进行缩放，按照长宽比进行缩放，不足的地方进行填充
     Parameters
     ----------
-        image: 输入图像
-        size: 图像大小
+        image: 输入图像     image_w : 350, image_h : 500
+        size: 图像大小      (416, 416)
     Returns
     -------
         boxed_image: 缩放后的图像
     """
-    image_w, image_h = image.size
-    w, h = size
-    new_w = int(image_w * min(w*1.0/image_w, h*1.0/image_h))
-    new_h = int(image_h * min(w*1.0/image_w, h*1.0/image_h))
-    resized_image = image.resize((new_w,new_h), Image.BICUBIC)
+    image_w, image_h = image.size  # image_w : 350, image_h : 500
+    w, h = size  # h ：416   w : 416
+    '''
+    计算缩放后的图像宽度: 
+       首先，`w*1.0/image_w`表示目标宽度与原始图像宽度的比例，`h*1.0/image_h`表示目标高度与原始图像高度的比例。
+       然后，`min(w*1.0/image_w, h*1.0/image_h)`取这两个比例中的较小值，即保证缩放后的图像在宽度和高度上都不会超过目标大小。
+       最后，将这个较小值乘以原始图像宽度，得到缩放后的图像宽度，并将结果转换为整数类型。
+    '''
+    new_w = int(image_w * min(w * 1.0 / image_w, h * 1.0 / image_h))  # 416
+    new_h = int(image_h * min(w * 1.0 / image_w, h * 1.0 / image_h))  # 291
+    # Image.BICUBIC`是`PIL`（Python Imaging Library）库中的一个图像缩放插值方法。它使用双三次插值算法来进行图像缩放，可以在保持图像质量的同时，对图像进行较大比例的缩放操作。
+    # <PIL.Image.Image image mode=RGB size=416x291 at 0x2D0500B4D68>   `
+    resized_image = image.resize((new_w, new_h), Image.BICUBIC)
 
+    '''
+    创建了一个新的图像对象，用于存储缩放并填充后的图像。        
+        - `Image.new('RGB', size, (128, 128, 128))`：这是`PIL`库中的`Image.new()`函数，用于创建一个具有指定模式（这里是`RGB`）、大小（由`size`参数指定）和初始颜色（这里是`(128, 128, 128)`，即灰色）的新图像。
+        - `'RGB'`：表示图像的模式为`RGB`，即红、绿、蓝三原色。这是一种常见的色彩模式，用于显示彩色图像。
+        - `size`：是一个元组，表示新图像的大小，即宽度和高度。
+        - `(128, 128, 128)`：是一个元组，表示新图像的初始颜色。在这里，使用了灰色作为初始颜色。
+        
+        通过创建这个新的图像对象，我们可以将缩放后的图像粘贴到其中，并得到最终的结果图像。
+    => <PIL.Image.Image image mode=RGB size=416x416 at 0x2D050176EF0>
+    '''
     boxed_image = Image.new('RGB', size, (128, 128, 128))
-    boxed_image.paste(resized_image, ((w-new_w)//2,(h-new_h)//2))
+    '''
+    将缩放后的图像resized_image 粘贴到 新创建的图像对象boxed_image中:    
+        - `boxed_image`：目标图像,这是之前创建的新图像对象，用于存储缩放并填充后的图像。
+        - `paste()`：这是`Image`对象的方法，用于将一个图像粘贴到另一个图像上。
+        - `resized_image`：要粘贴的图像,这是之前缩放后的图像。
+        - `((w-new_w)//2,(h-new_h)//2)`：这是一个坐标元组，表示将缩放后的图像粘贴到新图像的位置。(这样可以将图像粘贴到目标图像的中心位置)
+                                         其中，`(w-new_w)//2`计算了水平方向上的偏移量，`(h-new_h)//2`计算了垂直方向上的偏移量。
+                                               (416-416)//2                        (416-291)//2
+    这样可以将缩放后的图像居中粘贴到新图像中，将较小的图像按照一定的比例放大或缩小，并在放大或缩小后的图像周围进行填充，以达到指定的尺寸，从而得到最终的结果图像。
+    => <PIL.Image.Image image mode=RGB size=416x416 at 0x2D050176EF0>
+    '''
+    boxed_image.paste(resized_image, ((w - new_w) // 2, (h - new_h) // 2))
     return boxed_image
 
 
@@ -103,10 +136,12 @@ def draw_box(image, bbox):
         image: 训练数据图片
         bbox: 训练数据图片中标记box坐标
     """
-    xmin, ymin, xmax, ymax, label = tf.split(value = bbox, num_or_size_splits = 5, axis=2)
+    xmin, ymin, xmax, ymax, label = tf.split(value=bbox, num_or_size_splits=5, axis=2)
     height = tf.cast(tf.shape(image)[1], tf.float32)
     weight = tf.cast(tf.shape(image)[2], tf.float32)
-    new_bbox = tf.concat([tf.cast(ymin, tf.float32) / height, tf.cast(xmin, tf.float32) / weight, tf.cast(ymax, tf.float32) / height, tf.cast(xmax, tf.float32) / weight], 2)
+    new_bbox = tf.concat(
+        [tf.cast(ymin, tf.float32) / height, tf.cast(xmin, tf.float32) / weight, tf.cast(ymax, tf.float32) / height,
+         tf.cast(xmax, tf.float32) / weight], 2)
     new_image = tf.image.draw_bounding_boxes(image, new_bbox)
     tf.summary.image('input', new_image)
 
