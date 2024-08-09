@@ -159,15 +159,15 @@ class yolo:
         for _ in range(blocks_num):
             # 保存当前层作为快捷连接（shortcut）
             shortcut = layer
-            layer = self._conv2d_layer(layer, filters_num // 2, kernel_size=1, strides=1,
-                                       name="conv2d_" + str(conv_index))
-            layer = self._batch_normalization_layer(layer, name="batch_normalization_" + str(conv_index),
-                                                    training=training, norm_decay=norm_decay, norm_epsilon=norm_epsilon)
+
+            layer = self._conv2d_layer(layer, filters_num // 2, kernel_size=1, strides=1, name="conv2d_" + str(conv_index))
+            layer = self._batch_normalization_layer(layer, name="batch_normalization_" + str(conv_index), training=training, norm_decay=norm_decay, norm_epsilon=norm_epsilon)
             conv_index += 1
+
             layer = self._conv2d_layer(layer, filters_num, kernel_size=3, strides=1, name="conv2d_" + str(conv_index))
-            layer = self._batch_normalization_layer(layer, name="batch_normalization_" + str(conv_index),
-                                                    training=training, norm_decay=norm_decay, norm_epsilon=norm_epsilon)
+            layer = self._batch_normalization_layer(layer, name="batch_normalization_" + str(conv_index), training=training, norm_decay=norm_decay, norm_epsilon=norm_epsilon)
             conv_index += 1
+
             # 将快捷连接与当前层相加
             layer += shortcut
         return layer, conv_index
@@ -196,32 +196,39 @@ class yolo:
             conv_index: 卷积层计数，方便在加载预训练模型时使用
         """
         with tf.variable_scope('darknet53'):
+
             # 416,416,3 -> 416,416,32
-            conv = self._conv2d_layer(inputs, filters_num=32, kernel_size=3, strides=1,
-                                      name="conv2d_" + str(conv_index))
-            conv = self._batch_normalization_layer(conv, name="batch_normalization_" + str(conv_index),
-                                                   training=training, norm_decay=norm_decay, norm_epsilon=norm_epsilon)
-            conv_index += 1  # conv_index=2
-            # 416,416,32 -> 208,208,64  conv_index=5
-            conv, conv_index = self._Residual_block(conv, conv_index=conv_index, filters_num=64, blocks_num=1,
-                                                    training=training, norm_decay=norm_decay, norm_epsilon=norm_epsilon)
-            # 208,208,64 -> 104,104,128  conv_index=10
-            conv, conv_index = self._Residual_block(conv, conv_index=conv_index, filters_num=128, blocks_num=2,
-                                                    training=training, norm_decay=norm_decay, norm_epsilon=norm_epsilon)
-            # 104,104,128 -> 52,52,256  conv_index=27
-            conv, conv_index = self._Residual_block(conv, conv_index=conv_index, filters_num=256, blocks_num=8,
-                                                    training=training, norm_decay=norm_decay, norm_epsilon=norm_epsilon)
-            # route1 = 52,52,256       # Tensor("predict/darknet53/add_10:0", shape=(?, 52, 52, 256), dtype=float32)
+            # Tensor("predict/darknet53/conv2d_1/Conv2D:0", shape=(?, 416, 416, 32), dtype=float32)  conv_index=1
+            conv = self._conv2d_layer(inputs, filters_num=32, kernel_size=3, strides=1, name="conv2d_" + str(conv_index))
+            # Tensor("predict/darknet53/LeakyRelu:0", shape=(?, 416, 416, 32), dtype=float32)  conv_index=1
+            conv = self._batch_normalization_layer(conv, name="batch_normalization_" + str(conv_index), training=training, norm_decay=norm_decay, norm_epsilon=norm_epsilon)
+            conv_index += 1
+
+            # 416,416,32 -> 208,208,64
+            # conv=Tensor("predict/darknet53/add:0", shape=(?, 208, 208, 64), dtype=float32)  conv_index=5
+            conv, conv_index = self._Residual_block(conv, conv_index=conv_index, filters_num=64, blocks_num=1, training=training, norm_decay=norm_decay, norm_epsilon=norm_epsilon)
+
+            # 208,208,64 -> 104,104,128
+            # Tensor("predict/darknet53/add_2:0", shape=(?, 104, 104, 128), dtype=float32)  conv_index=10
+            conv, conv_index = self._Residual_block(conv, conv_index=conv_index, filters_num=128, blocks_num=2, training=training, norm_decay=norm_decay, norm_epsilon=norm_epsilon)
+
+            # 104,104,128 -> 52,52,256
+            # Tensor("predict/darknet53/add_10:0", shape=(?, 52, 52, 256), dtype=float32) conv_index=27
+            conv, conv_index = self._Residual_block(conv, conv_index=conv_index, filters_num=256, blocks_num=8, training=training, norm_decay=norm_decay, norm_epsilon=norm_epsilon)
+            # route1 = 52,52,256
             route1 = conv
-            # 52,52,256 -> 26,26,512    conv_index=44
-            conv, conv_index = self._Residual_block(conv, conv_index=conv_index, filters_num=512, blocks_num=8,
-                                                    training=training, norm_decay=norm_decay, norm_epsilon=norm_epsilon)
-            # route2 = 26,26,512       # Tensor("predict/darknet53/add_18:0", shape=(?, 26, 26, 512), dtype=float32)
+
+            # 52,52,256 -> 26,26,512
+            # Tensor("predict/darknet53/add_18:0", shape=(?, 26, 26, 512), dtype=float32) conv_index=44
+            conv, conv_index = self._Residual_block(conv, conv_index=conv_index, filters_num=512, blocks_num=8, training=training, norm_decay=norm_decay, norm_epsilon=norm_epsilon)
+            # route2 = 26,26,512
             route2 = conv
-            # 26,26,512 -> 13,13,1024  # Tensor("predict/darknet53/add_22:0", shape=(?, 13, 13, 1024), dtype=float32)  conv_index=53
-            conv, conv_index = self._Residual_block(conv, conv_index=conv_index, filters_num=1024, blocks_num=4,
-                                                    training=training, norm_decay=norm_decay, norm_epsilon=norm_epsilon)
+
+            # 26,26,512 -> 13,13,1024
+            # Tensor("predict/darknet53/add_22:0", shape=(?, 13, 13, 1024), dtype=float32)  conv_index=53
+            conv, conv_index = self._Residual_block(conv, conv_index=conv_index, filters_num=1024, blocks_num=4, training=training, norm_decay=norm_decay, norm_epsilon=norm_epsilon)
             # route3 = 13,13,1024
+
         return route1, route2, conv, conv_index
 
     # 在 Darknet53 提取的特征层基础上，添加了针对 3 种不同比例的特征图的卷积块，以提高对小物体的检测率, 输出两个网络结果:
@@ -235,53 +242,60 @@ class yolo:
             yolo3在Darknet53提取的特征层基础上，又加了针对3种不同比例的feature map的block，这样来提高对小物体的检测率
         Parameters
         ----------
-            inputs: 输入特征
-            filters_num: 卷积核数量
-            out_filters: 最后输出层的卷积核数量
-            conv_index: 卷积层数序号，方便根据名字加载预训练权重
+            inputs: 输入特征                                   Tensor("predict/darknet53/add_22:0", shape=(?, 13, 13, 1024), dtype=float32)
+            filters_num: 卷积核数量                            512
+            out_filters: 最后输出层的卷积核数量                  255
+            conv_index: 卷积层数序号，方便根据名字加载预训练权重     53
             training: 是否为训练
-            norm_decay: 在预测时计算moving average时的衰减率
-            norm_epsilon: 方差加上极小的数，防止除以0的情况
+            norm_decay: 在预测时计算moving average时的衰减率     0.99
+            norm_epsilon: 方差加上极小的数，防止除以0的情况        0.001
         Returns
         -------
             route: 返回最后一层卷积的前一层结果
             conv: 返回最后一层卷积的结果
             conv_index: conv层计数
         """
-        conv = self._conv2d_layer(inputs, filters_num=filters_num, kernel_size=1, strides=1,
-                                  name="conv2d_" + str(conv_index))
-        conv = self._batch_normalization_layer(conv, name="batch_normalization_" + str(conv_index), training=training,
-                                               norm_decay=norm_decay, norm_epsilon=norm_epsilon)
+        # Tensor("predict/yolo/conv2d_53/Conv2D:0", shape=(?, 13, 13, 512), dtype=float32)  conv_index=53
+        conv = self._conv2d_layer(inputs, filters_num=filters_num, kernel_size=1, strides=1, name="conv2d_" + str(conv_index))
+        # Tensor("predict/yolo/LeakyRelu:0", shape=(?, 13, 13, 512), dtype=float32)  conv_index=53
+        conv = self._batch_normalization_layer(conv, name="batch_normalization_" + str(conv_index), training=training, norm_decay=norm_decay, norm_epsilon=norm_epsilon)
         conv_index += 1
-        conv = self._conv2d_layer(conv, filters_num=filters_num * 2, kernel_size=3, strides=1,
-                                  name="conv2d_" + str(conv_index))
-        conv = self._batch_normalization_layer(conv, name="batch_normalization_" + str(conv_index), training=training,
-                                               norm_decay=norm_decay, norm_epsilon=norm_epsilon)
+
+        # Tensor("predict/yolo/conv2d_54/Conv2D:0", shape=(?, 13, 13, 1024), dtype=float32) conv_index=54
+        conv = self._conv2d_layer(conv, filters_num=filters_num * 2, kernel_size=3, strides=1,name="conv2d_" + str(conv_index))
+        # Tensor("predict/yolo/LeakyRelu_1:0", shape=(?, 13, 13, 1024), dtype=float32) conv_index=54
+        conv = self._batch_normalization_layer(conv, name="batch_normalization_" + str(conv_index), training=training, norm_decay=norm_decay, norm_epsilon=norm_epsilon)
         conv_index += 1
-        conv = self._conv2d_layer(conv, filters_num=filters_num, kernel_size=1, strides=1,
-                                  name="conv2d_" + str(conv_index))
-        conv = self._batch_normalization_layer(conv, name="batch_normalization_" + str(conv_index), training=training,
-                                               norm_decay=norm_decay, norm_epsilon=norm_epsilon)
+
+        # Tensor("predict/yolo/conv2d_55/Conv2D:0", shape=(?, 13, 13, 512), dtype=float32)  conv_index=55
+        conv = self._conv2d_layer(conv, filters_num=filters_num, kernel_size=1, strides=1, name="conv2d_" + str(conv_index))
+        # Tensor("predict/yolo/LeakyRelu_2:0", shape=(?, 13, 13, 512), dtype=float32)  conv_index=55
+        conv = self._batch_normalization_layer(conv, name="batch_normalization_" + str(conv_index), training=training, norm_decay=norm_decay, norm_epsilon=norm_epsilon)
         conv_index += 1
-        conv = self._conv2d_layer(conv, filters_num=filters_num * 2, kernel_size=3, strides=1,
-                                  name="conv2d_" + str(conv_index))
-        conv = self._batch_normalization_layer(conv, name="batch_normalization_" + str(conv_index), training=training,
-                                               norm_decay=norm_decay, norm_epsilon=norm_epsilon)
+
+        # Tensor("predict/yolo/conv2d_56/Conv2D:0", shape=(?, 13, 13, 1024), dtype=float32)  conv_index=56
+        conv = self._conv2d_layer(conv, filters_num=filters_num * 2, kernel_size=3, strides=1, name="conv2d_" + str(conv_index))
+        # Tensor("predict/yolo/LeakyRelu_3:0", shape=(?, 13, 13, 1024), dtype=float32) conv_index=56
+        conv = self._batch_normalization_layer(conv, name="batch_normalization_" + str(conv_index), training=training, norm_decay=norm_decay, norm_epsilon=norm_epsilon)
         conv_index += 1
-        conv = self._conv2d_layer(conv, filters_num=filters_num, kernel_size=1, strides=1,
-                                  name="conv2d_" + str(conv_index))
-        conv = self._batch_normalization_layer(conv, name="batch_normalization_" + str(conv_index), training=training,
-                                               norm_decay=norm_decay, norm_epsilon=norm_epsilon)
+
+        # Tensor("predict/yolo/conv2d_57/Conv2D:0", shape=(?, 13, 13, 512), dtype=float32)  conv_index=57
+        conv = self._conv2d_layer(conv, filters_num=filters_num, kernel_size=1, strides=1, name="conv2d_" + str(conv_index))
+        # Tensor("predict/yolo/LeakyRelu_4:0", shape=(?, 13, 13, 512), dtype=float32) conv_index=57
+        conv = self._batch_normalization_layer(conv, name="batch_normalization_" + str(conv_index), training=training, norm_decay=norm_decay, norm_epsilon=norm_epsilon)
         conv_index += 1
         route = conv
-        conv = self._conv2d_layer(conv, filters_num=filters_num * 2, kernel_size=3, strides=1,
-                                  name="conv2d_" + str(conv_index))
-        conv = self._batch_normalization_layer(conv, name="batch_normalization_" + str(conv_index), training=training,
-                                               norm_decay=norm_decay, norm_epsilon=norm_epsilon)
+
+        # Tensor("predict/yolo/conv2d_58/Conv2D:0", shape=(?, 13, 13, 1024), dtype=float32) conv_index=58
+        conv = self._conv2d_layer(conv, filters_num=filters_num * 2, kernel_size=3, strides=1, name="conv2d_" + str(conv_index))
+        # Tensor("predict/yolo/LeakyRelu_5:0", shape=(?, 13, 13, 1024), dtype=float32) conv_index=58
+        conv = self._batch_normalization_layer(conv, name="batch_normalization_" + str(conv_index), training=training, norm_decay=norm_decay, norm_epsilon=norm_epsilon)
         conv_index += 1
-        conv = self._conv2d_layer(conv, filters_num=out_filters, kernel_size=1, strides=1,
-                                  name="conv2d_" + str(conv_index), use_bias=True)
+
+        # Tensor("predict/yolo/conv2d_59/BiasAdd:0", shape=(?, 13, 13, 255), dtype=float32) conv_index=59
+        conv = self._conv2d_layer(conv, filters_num=out_filters, kernel_size=1, strides=1, name="conv2d_" + str(conv_index), use_bias=True)
         conv_index += 1
+
         return route, conv, conv_index
 
     # 返回三个特征层的内容
@@ -298,6 +312,10 @@ class yolo:
             training: 是否为训练模式
         """
         conv_index = 1
+
+        # --------------------------------------#
+        #   Darknet-53
+        # --------------------------------------#
         # route1 = 52,52,256、route2 = 26,26,512、route3 = 13,13,1024
         conv2d_26, conv2d_43, conv, conv_index = self._darknet53(inputs, conv_index, training=training,
                                                                  norm_decay=self.norm_decay,
@@ -308,7 +326,8 @@ class yolo:
             # --------------------------------------#
             # 使用 _yolo_block 函数对 conv 特征层进行处理，得到新的特征层 conv2d_57 和 conv2d_59，以及更新后的卷积层数序号 conv_index
             # conv2d_57 = 13,13,512   Tensor("predict/yolo/LeakyRelu_4:0", shape=(?, 13, 13, 512), dtype=float32)
-            # conv2d_59 = 13,13,255(3x(80+5))  Tensor("predict/yolo/conv2d_59/BiasAdd:0", shape=(?, 13, 13, 255), dtype=float32)
+            # conv2d_59 = 13,13,255(3x(80+5))
+            #             Tensor("predict/yolo/conv2d_59/BiasAdd:0", shape=(?, 13, 13, 255), dtype=float32)
             conv2d_57, conv2d_59, conv_index = self._yolo_block(conv, 512, num_anchors * (num_classes + 5),
                                                                 conv_index=conv_index, training=training,
                                                                 norm_decay=self.norm_decay,
@@ -317,15 +336,17 @@ class yolo:
             # --------------------------------------#
             #   获得第二个特征层
             # --------------------------------------#
-            # 对 conv2d_57 进行卷积操作，得到新的特征层 conv2d_60
+            # 对 conv2d_57 进行卷积操作，得到新的特征层
+            # conv2d_60 Tensor("predict/yolo/conv2d_60/Conv2D:0", shape=(?, 13, 13, 256), dtype=float32)
             conv2d_60 = self._conv2d_layer(conv2d_57, filters_num=256, kernel_size=1, strides=1,
                                            name="conv2d_" + str(conv_index))
-            # 对 conv2d_60 进行批量归一化处理
+            # 对 conv2d_60 进行批量归一化处理  Tensor("predict/yolo/LeakyRelu_6:0", shape=(?, 13, 13, 256), dtype=float32)
             conv2d_60 = self._batch_normalization_layer(conv2d_60, name="batch_normalization_" + str(conv_index),
                                                         training=training, norm_decay=self.norm_decay,
                                                         norm_epsilon=self.norm_epsilon)
             conv_index += 1
-            # unSample_0 = 26,26,256  对 conv2d_60 进行上采样操作，得到新的特征层 unSample_0。
+            # unSample_0 = 26,26,256  对 conv2d_60 进行上采样操作，得到新的特征层 unSample_0
+            # Tensor("predict/yolo/upSample_0:0", shape=(?, ?, ?, 256), dtype=float32)
             unSample_0 = tf.image.resize_nearest_neighbor(conv2d_60,
                                                           [2 * tf.shape(conv2d_60)[1], 2 * tf.shape(conv2d_60)[1]],
                                                           name='upSample_0')

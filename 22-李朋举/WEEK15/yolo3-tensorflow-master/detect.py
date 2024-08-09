@@ -1,5 +1,6 @@
 import os
 import config
+import h5py
 import argparse
 import numpy as np
 import tensorflow as tf
@@ -31,7 +32,7 @@ def detect(image_path, model_path, yolo_weights=None):
     # 归一化
     image_data /= 255.
     # 转格式，第一维度填充 (在第一维度上添加一个维度，以适应模型的输入要求)
-    image_data = np.expand_dims(image_data, axis=0)
+    image_data = np.expand_dims(image_data, axis=0)  # (1,416,416,3) [[[[0.5019608 0.5019608 0.5019608], ...,
     # ---------------------------------------#
     #   图片输入
     # ---------------------------------------#
@@ -78,8 +79,7 @@ def detect(image_path, model_path, yolo_weights=None):
         # ---------------------------------------#
         # 找到几个box，打印
         print('Found {} boxes for {}'.format(len(out_boxes), 'img'))
-        font = ImageFont.truetype(font='font/FiraMono-Medium.otf',
-                                  size=np.floor(3e-2 * image.size[1] + 0.5).astype('int32'))
+        font = ImageFont.truetype(font='font/FiraMono-Medium.otf', size=np.floor(3e-2 * image.size[1] + 0.5).astype('int32'))
 
         # 厚度
         thickness = (image.size[0] + image.size[1]) // 300

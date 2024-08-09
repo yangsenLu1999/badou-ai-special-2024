@@ -4,7 +4,7 @@ import tensorflow as tf
 from PIL import Image
 from collections import defaultdict
 
-
+# 从权重文件中读取预训练的权重值，并将其赋值给模型中的相应变量。通过遍历变量列表和根据层的类型进行不同的加载操作，实现了权重的加载过程。
 def load_weights(var_list, weights_file):
     """
     Introduction
@@ -18,22 +18,25 @@ def load_weights(var_list, weights_file):
     -------
         assign_ops: 赋值更新操作
     """
-    with open(weights_file, "rb") as fp:
-        _ = np.fromfile(fp, dtype=np.int32, count=5)
 
+    # 以二进制只读模式打开权重文件，并将文件指针赋值给 fp
+    with open(weights_file, "rb") as fp:
+        # 读取 5 个整数
+        _ = np.fromfile(fp, dtype=np.int32, count=5)
+        # 读取浮点数, 从文件中读取浮点数，并将其存储在 weights 数组中
         weights = np.fromfile(fp, dtype=np.float32)
 
-    ptr = 0
-    i = 0
-    assign_ops = []
-    while i < len(var_list) - 1:
+    ptr = 0  # 初始化指针 ptr 为 0，用于在 weights 数组中索引权重值
+    i = 0  # 初始化变量 i 为 0，用于遍历 var_list 变量列表
+    assign_ops = []  # 创建一个空列表 assign_ops，用于存储赋值更新操作
+    while i < len(var_list) - 1:  # 开始一个循环，只要 i 小于 var_list 列表的长度减 1
         var1 = var_list[i]
         var2 = var_list[i + 1]
-        # do something only if we process conv layer
+        # 仅当处理卷积层时执行以下操作  do something only if we process conv layer
         if 'conv2d' in var1.name.split('/')[-2]:
-            # check type of next layer
+            #  检查下一层的类型, 如果下一层是批量归一化层 check type of next layer
             if 'batch_normalization' in var2.name.split('/')[-2]:
-                # load batch norm params
+                # 加载批量归一化参数,并将其添加到 assign_ops 列表中   load batch norm params
                 gamma, beta, mean, var = var_list[i + 1:i + 5]
                 batch_norm_vars = [beta, gamma, mean, var]
                 for var in batch_norm_vars:
@@ -43,10 +46,10 @@ def load_weights(var_list, weights_file):
                     ptr += num_params
                     assign_ops.append(tf.assign(var, var_weights, validate_shape=True))
 
-                # we move the pointer by 4, because we loaded 4 variables
+                #  指针移动 4 个位置，因为加载了 4 个变量  we move the pointer by 4, because we loaded 4 variables
                 i += 4
             elif 'conv2d' in var2.name.split('/')[-2]:
-                # load biases
+                # 加载偏置，并将其添加到 assign_ops 列表中   load biases
                 bias = var2
                 bias_shape = bias.shape.as_list()
                 bias_params = np.prod(bias_shape)
@@ -54,14 +57,15 @@ def load_weights(var_list, weights_file):
                 ptr += bias_params
                 assign_ops.append(tf.assign(bias, bias_weights, validate_shape=True))
 
-                # we loaded 1 variable
+                # 指针移动 1 个位置，因为加载了 1 个变量 we loaded 1 variable
                 i += 1
-            # we can load weights of conv layer
+
+            # 可以加载卷积层的权重 we can load weights of conv layer
             shape = var1.shape.as_list()
             num_params = np.prod(shape)
 
             var_weights = weights[ptr:ptr + num_params].reshape((shape[3], shape[2], shape[0], shape[1]))
-            # remember to transpose to column-major
+            # 记得转置为列主序 remember to transpose to column-major
             var_weights = np.transpose(var_weights, (2, 3, 1, 0))
             ptr += num_params
             assign_ops.append(tf.assign(var1, var_weights, validate_shape=True))
