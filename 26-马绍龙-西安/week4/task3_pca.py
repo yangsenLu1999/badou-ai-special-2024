@@ -44,7 +44,7 @@ class CPCA(object):
         return U
 
     def _Z(self):  # 按照Z=XU求降维矩阵Z, shape=(m,k), n是样本总数，k是降维矩阵中特征维度总数
-        Z = np.dot(self.X, self.U)
+        Z = np.dot(self.X, self.U)  # 在吴恩达的机器学习课中，这里是用U的转置放前面， 然后乘以每一列数据， 得到降维后的每一列数据， 见吴恩达14-4
         print('X shape:', np.shape(self.X))
         print('U shape:', np.shape(self.U))
         print('Z shape:', np.shape(Z))

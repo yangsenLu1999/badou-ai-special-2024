@@ -37,5 +37,5 @@ img = cv2.imread('lenna.png')
 img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 noise_gs_img=util.random_noise(img,mode='gaussian')
 cv2.imshow("lenna_",noise_gs_img)
-
+cv2.imwrite('lenna_noise.png',noise_gs_img)
 cv2.waitKey(0)
