@@ -1,0 +1,6 @@
+cat.0.jpg;0
+cat.1.jpg;0
+cat.2.jpg;0
+dog.7862.jpg;1
+dog.7863.jpg;1
+dog.7864.jpg;1

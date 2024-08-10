@@ -23,6 +23,8 @@
 # cv2.imshow("image",img)
 # cv2.waitKey(0)
 # 自己的代码
+import time
+
 import cv2
 import cv2 as cv
 import numpy as np
@@ -48,7 +50,10 @@ def denoise_image():
 img = cv.imread("lenna.png")  # 读取图像
 new_height = int(input("请输入新图像的高度："))
 new_width = int(input("请输入新图像的宽度："))
+start = time.time()
 newImg = nearest_interp(img,new_height,new_width)  # 对图像进行最近邻插值
+end = time.time()
+print(' took', end - start, 'seconds.')
 denoised_img = denoise_image()  # 对新图像进行降噪处理
 cv.imshow("nearest interp", newImg)  # 显示插值后的图像
 cv.imshow("denoised image", denoised_img)  # 显示降噪后的图像

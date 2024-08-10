@@ -1,0 +1,25 @@
+import vgg16
+import tensorflow.compat.v1 as tf
+import numpy as np
+import cv2
+import utils
+
+tf.disable_v2_behavior()
+
+img= cv2.imread("./test_data/dog.jpg")
+inputs = tf.placeholder(tf.float32,[None,None,3])
+resized_img=utils.resize_image(inputs, (224, 224))
+
+# 建立网络结构
+prediction = vgg16.vgg_16(resized_img)
+with tf.session() as sess:
+    sess.run(tf.global_variables_initializer())
+    #加载模型
+    saver = tf.train.Saver()
+    saver.restore(sess, "./model/vgg_16.ckpt")
+    #预测
+    result=tf.nn.softmax(prediction)
+    rate=sess.run(result,feed_dict={inputs:img})
+    utils.print_prob(rate[0], './synset.txt')
+
+#计算图：tf.placeholder(tf.float32,[None,None,3])->utils.resize_image->vgg16
