@@ -1,0 +1,53 @@
+'''给一副图加上高斯噪声的处理顺序：
+a.s输入参数sigma和mean
+b.生成高斯随机数
+c.根据输入像素计算输出像素
+d.重新将像素值放缩到【0-255】之间
+f.循环所有像素
+g.输出图像
+'''
+
+import numpy as np
+import cv2
+from numpy import shape
+import random
+def GaussianNoise(src,mean,sigma,percetage):
+    NoiseImage=src
+    NoiseNum=int(percetage*src.shape[0]*src.shape[1])
+    for i in range(NoiseNum):
+        # 每次取一个随机点
+        # 把一张图片的像素用行和列表示的话，randX 代表随机生成的行，randY代表随机生成的列
+        # random.randint生成随机整数
+        # 高斯噪声图片边缘不处理，故-1
+        randX=random.randint(0,src.shape[0]-1)
+        randY=random.randint(0,src.shape[1]-1)
+        #此处在原有像素灰度值上加上随机数
+        NoiseImage[randX,randY]=NoiseImage[randX,randY]+random.gauss(mean,sigma)
+        # 若灰度值小于0则强制为0，若灰度值大于255则强制为255
+        if NoiseImage[randX,randY]<0:
+            NoiseImage[randX,randY]=0
+        elif NoiseImage[randX,randY]>255:
+            NoiseImage[randX, randY]=255
+    return NoiseImage
+img = cv2.imread('D:/baduzl/badou/2/dama/lenna.png',0)
+img1 = GaussianNoise(img,2,10,0.9)
+img = cv2.imread('D:/baduzl/badou/2/dama/lenna.png')
+img2 = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+cv2.imshow('source',img2)
+cv2.imshow('GaussianNoise',img1)
+cv2.waitKey(0)
+
+'方法二'
+
+import cv2
+import numpy as np
+image = cv2.imread('D:/baduzl/badou/2/dama/lenna.png')
+#设置噪声的标准偏差值
+noise_std = 50
+noise = np.random.randn(*image.shape)*noise_std
+#确保噪声图像的像素落在【0-255】
+noise_image=np.clip(image+noise,0,255).astype(np.uint8)
+cv2.imshow('original image',image)
+cv2.imshow('Noise image',noise_image)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
