@@ -7,11 +7,8 @@
 # ./model_data
     存放预训练的模型参数
         
-# ./moduls
+# ./modules
     为程序运行编写的py模块
-    
-# ./train.py
-    训练模型程序
     
 # ./main.py
     推理程序
