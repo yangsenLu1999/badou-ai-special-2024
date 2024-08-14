@@ -1,0 +1,2 @@
+模型参数名称为best_model_forZhuYiGuang.pth
+log.txt为训练过程中的loss
