@@ -35,11 +35,13 @@ def resize_img(img, size, method=tf.image.ResizeMethod.BILINEAR, align_corner=Fa
         return img
 
 
-def print_prob(prob, file_path):
-    synset = [L.strip() for L in open(file_path).readlines()]  # 打开文件后按行读取，strip字符串方法，去除前导和尾随空白字符。
-    pred = np.argsort(prob)[::-1]  # 将概率从大到小排列序号的结果存入pred
-    top1 = synset[pred[0]]  # 概率最大的那个序号，回溯到标签信息的对应为止
-    print('top1:', top1, prob[pred[0]])  # 输出最大标签，和概率
-    top5 = [(synset[pred[i]], prob[pred[i]]) for i in range(5)]
-    print('top5:', top5)
-    return top1
+def answer(synset_file, prob):
+    synset = [L.strip() for L in open(synset_file).readlines()]  # 打开文件后按行读取，strip字符串方法，去除前导和尾随空格和特殊字符（换行）。
+    index = np.argsort(prob)[::-1]  # [:]数据全员取出，默认从小到大排列，[:-1]表示从大到小排列
+    index_top1 = index[0]
+    print('top1:', synset[index_top1], prob[index_top1])
+
+    index_top5 = index[0: 5]
+    print('top5:', [(synset[index[i]], prob[index[i]]) for i in range(5)])
+    return synset[index_top1]
+
