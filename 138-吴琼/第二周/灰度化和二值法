@@ -1,0 +1,43 @@
+import matplotlib.pyplot as plt
+import cv2
+from skimage.color import rgb2gray
+import numpy as np
+
+#----原图访问于2*2画布第一个位置并打印----
+plt.subplot(221)
+img = plt.imread('lenna.png')
+plt.imshow(img)
+print('-----img_lenna-----')
+print(img)
+
+
+#-----灰度化图访问与2*2画布第2个位置并打印----
+img_gray = rgb2gray(img)     #用函数实现灰度化，等价于两个for循环----
+plt.subplot(222)
+plt.imshow(img_gray,cmap='gray')
+print('------img_gray_lenna------')
+print(img_gray)
+
+#二值化实现
+#两层for循环实现
+m,n =img_gray.shape
+imgtwo_keys = np.zeros([m,n],img_gray.dtype)
+for i in range(m):
+    for j in range(n):
+        if(img_gray[i,j] <= 0.5):
+            imgtwo_keys[i,j] = 0
+        else:
+            imgtwo_keys[i,j] =1
+#函数实现二值化
+#imgtwo_keys = np.where(img_gray >=0.5,1,0) 若像素点的值大于0.5赋值为1，否则为0
+print('-----imgtwo_keys------')
+print(imgtwo_keys)
+print(imgtwo_keys.shape)
+
+plt.subplot(223)
+plt.imshow(imgtwo_keys,cmap ='gray')
+plt.show()
+
+#
+
+

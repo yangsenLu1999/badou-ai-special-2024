@@ -1,0 +1,91 @@
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
+# 创建slim对象
+slim = tf.contrib.slim
+'''
+slim = tf.contrib.slim 是一个TensorFlow库中的模块，用于定义、训练和评估复杂的机器学习模型。
+这个模块提供了一些高级的API，可以帮助用户更轻松地构建和训练神经网络。
+'''
+
+def vgg16(inputs,classes=1000,is_training=True,dropout=0.5,scope='vgg_16',spatial_squeeze=True):
+    with tf.variable_scope(scope,[inputs]):
+        '''
+        tf.variable_scope是TensorFlow中的一个上下文管理器，用于定义和管理变量作用域
+        name（字符串）：指定变量作用域的名称。在这个作用域内创建的所有变量都将带有这个名称作为前缀。例如，如果name为"vgg_16"，那么在这个作用域内创建的变量名为"vgg_16/weights"、"vgg_16/biases"等
+        initializer（初始化器）：可选参数，用于设置变量的初始化方式。默认情况下，所有变量都会使用glorot_uniform_initializer进行初始化。
+        regularizer（正则化器）：可选参数，用于对变量应用正则化。默认情况下，没有正则化器。
+        collections（列表）：可选参数，用于将变量添加到指定的集合中。默认情况下，变量会被添加到tf.GraphKeys.GLOBAL_VARIABLES集合中。
+        custom_getter（自定义获取器）：可选参数，用于自定义如何获取变量。默认情况下，使用get_variable函数。
+        '''
+        # conv1两次[3,3]卷积网络，输出的特征层为64，输出为(224,224,64)
+        net=slim.repeat(inputs,2,slim.conv2d,64,[3,3],scope="conv1")
+        # 2X2最大池化，输出net为(112,112,64)
+        net = slim.max_pool2d(net, [2, 2], scope='pool1')
+
+        '''
+        tf.contrib.slim.conv2d和tf.nn.conv2d的区别：
+        tf.contrib.slim.conv2d和tf.nn.conv2d在功能性、参数初始化以及步长和填充等方面存在区别。以下是具体分析：
+        1,功能性:
+        tf.nn.conv2d：tf.nn.conv2d是TensorFlow中用于实现卷积操作的基础函数，它定义了进行卷积所需的基本参数，如输入张量、卷积核、步长、填充方式等。
+        tf.contrib.slim.conv2d：tf.contrib.slim.conv2d提供了更多的功能，包括初始化器、正则化器、激活函数和归一化函数等，这允许用户在定义卷积层时能够更细致地控制层的各个方面。
+        2,参数初始化:
+        tf.nn.conv2d：tf.nn.conv2d需要用户自己创建卷积核（filter）张量，其形状需为[filter_height, filter_width, in_channels, out_channels]。
+        tf.contrib.slim.conv2d：tf.contrib.slim.conv2d提供直接指定输出通道数的方式，无需手动设置卷积核的形状和大小。它还允许通过参数指定权重和偏置的初始化方法。
+        3,步长和填充
+        tf.nn.conv2d：tf.nn.conv2d步长通常以向量形式提供，长度为4，对应于输入张量的四个维度。
+        tf.contrib.slim.conv2d：tf.contrib.slim.conv2d步长默认值为1，支持更简洁的调用方式。对于填充，两者都支持"SAME"和"VALID"选项。
+        
+        tf.contrib.slim.conv2d参数：
+        input：这是输入张量，通常是上一层的输出或者是数据预处理后的图像数据。它的维度取决于你的数据格式（NHWC或NCHW）。
+        num_outputs：这个参数指定了卷积层的输出通道数，即卷积核的数量。它直接影响到生成的特征图的深度。 
+        kernel_size：这是一个整数或者长度为2的整数数组，指定了卷积核的大小。对于二维卷积（如图像处理），通常使用[height, width]的形式来表示。
+        stride：与kernel_size类似，stride定义了在输入数据上应用卷积核时的步长。默认值为1，可以是一个单一的整数或者一个包含两个整数的列表。
+        padding：这个参数定义了在卷积操作前后对输入数据应用的填充数量。填充的目的是控制特征图的大小，可以是"VALID"（不填充）或者"SAME"（适当填充以保持特征图尺寸不变）。
+        除此之外，还有：
+        activation_fn：这个参数允许你选择一个激活函数，如ReLU、Leaky ReLU等，用于增加模型的非线性。默认None
+        normalizer_fn：这个参数用于选择一种归一化方法，如Batch Normalization，来帮助稳定模型的训练过程。默认None
+        weights_initializer：这个参数用于设置卷积核权重的初始化方法，如随机正态分布初始化（RandomNormal）、均匀分布初始化（Uniform）等。默认正态分布初始化（RandomNormal）
+        biases_initializer：与weights_initializer类似，这个参数用于设置偏置项的初始化方法。默认为0
+        '''
+
+        # conv2两次[3,3]卷积网络，输出的特征层为128，输出net为(112,112,128)
+        net = slim.repeat(net, 2, slim.conv2d, 128, [3, 3], scope='conv2')
+        # 2X2最大池化，输出net为(56,56,128)
+        net = slim.max_pool2d(net, [2, 2], scope='pool2')
+
+        # conv3三次[3,3]卷积网络，输出的特征层为256，输出net为(56,56,256)
+        net=slim.repeat(net,3,slim.conv2d,256,[3,3],scope='conv3')
+        # 2X2最大池化，输出net为(28,28,256)
+        net = slim.max_pool2d(net, [2, 2], scope='pool3')
+
+        # conv3三次[3,3]卷积网络，输出的特征层为256，输出net为(28,28,512)
+        net = slim.repeat(net, 3, slim.conv2d, 512, [3, 3], scope='conv4')
+        # 2X2最大池化，输出net为(14,14,512)
+        net = slim.max_pool2d(net, [2, 2], scope='pool4')
+
+        # conv3三次[3,3]卷积网络，输出的特征层为256，输出net为(14,14,512)
+        net = slim.repeat(net, 3, slim.conv2d, 512, [3, 3], scope='conv5')
+        # 2X2最大池化，输出net为(7,7,512)
+        net = slim.max_pool2d(net, [2, 2], scope='pool5')
+
+        # 利用卷积的方式模拟全连接层，效果等同，输出net为(1,1,4096)
+        net=slim.conv2d(net,4096,[7,7],padding='VALID', scope='fc6')
+        net = slim.dropout(net, dropout, is_training=is_training,
+                           scope='dropout6')
+
+        # 利用卷积的方式模拟全连接层，效果等同，输出net为(1,1,4096)
+        net = slim.conv2d(net, 4096, [1, 1], scope='fc7')
+        net = slim.dropout(net, dropout, is_training=is_training,
+                           scope='dropout7')
+
+        # 利用卷积的方式模拟全连接层，效果等同，输出net为(1,1,1000)
+        net = slim.conv2d(net, classes, [1, 1],
+                          activation_fn=None,
+                          normalizer_fn=None,
+                          scope='fc8')
+
+        # 由于用卷积的方式模拟全连接层，所以输出需要平铺
+        if spatial_squeeze:
+            net = tf.squeeze(net, [1, 2], name='fc8/squeezed')  #tf.squeeze降维
+        return net
+

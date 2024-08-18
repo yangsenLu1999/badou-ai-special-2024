@@ -1,0 +1,22 @@
+import cv2
+import  numpy as np
+
+def exchange(img):
+    h,w,c = img.shape
+    img_exchange = np.zeros((700,700,c),np.uint8)
+    sh = 700/h
+    sw = 700/w
+    for i in range(700):
+        for j in range(700):
+            m = int(i/sh +0.5)
+            n = int(j/sh +0.5)
+            img_exchange[i,j]=img[m,n]
+    return img_exchange
+
+img = cv2.imread('lenna.png')
+result = exchange(img)
+print(result)
+print(result.shape)
+cv2.imshow('nearst interrupt',result)
+cv2.imshow('img',img)
+cv2.waitKey(0)
