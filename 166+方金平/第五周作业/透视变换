@@ -1,0 +1,28 @@
+#透视变换
+
+import cv2
+import numpy as np
+
+img = cv2.imread('D:/baduzl/badou/2/dama/photo1.jpg')
+
+#拷贝图片
+
+img1 = img.copy()
+
+#转灰度，做单通道计算节约时间
+gray = cv2.cvtColor(img1,cv2.COLOR_BGR2GRAY)
+#canny边缘检测
+edged = cv2.Canny(gray, 30, 120, 3)            # 边缘检测
+#src是原图像四个顶点
+#dst的目标图像四个顶点
+src = np.float32([[207, 151], [517, 285], [17, 601], [343, 731]])
+dst = np.float32([[0, 0], [500, 0], [0, 1000], [500, 1000]])
+# 生成透视变换矩阵；进行透视变换
+m = cv2.getPerspectiveTransform(src, dst)
+result = cv2.warpPerspective(img1, m, (337, 488))
+# (337,488)是输出图像大小
+cv2.imshow("src", img)
+cv2.imshow("result", result)
+cv2.waitKey(0)
+
+
