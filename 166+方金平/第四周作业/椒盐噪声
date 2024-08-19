@@ -1,0 +1,50 @@
+
+'''给一副图加上椒盐噪声的处理顺序：
+a.指定信噪比snr（其取值范围在【0，1】之间
+b.计算总像素数目sp，得到要加噪的像素数目NP=sp*(1-snr)
+c.随机获取要加噪的每个像素位置p（i，j）
+d.指定像素值为255或0
+f.重复c,d两个步骤完成所有像素的NP个像素
+g.输出加噪后的图像
+'''
+
+import numpy as np
+import  cv2
+from numpy import shape
+import random
+def fun1(src,percetage):
+    NoiseImg=src
+    NosieNum=int(percetage*src.shape[0]*src.shape[1])
+    for i in range(NosieNum):
+        # 每次取一个随机点
+        # 把一张图片的像素用行和列表示的话，randX 代表随机生成的行，randY代表随机生成的列
+        randX=random.randint(0,src.shape[0]-1)
+        randY=random.randint(0,src.shape[1]-1)
+        # random.random生成随机浮点数，随意取到一个像素点有一半的可能是白点255，一半的可能是黑点0
+        if random.random()<=0.5:
+           NoiseImg[randX,randY]=0
+        else:
+           NoiseImg[randX,randY]=255
+    return NoiseImg
+img=cv2.imread('D:/baduzl/badou/2/dama/lenna.png',0)
+img1=fun1(img,0.5)
+img=cv2.imread('D:/baduzl/badou/2/dama/lenna.png')
+img2 = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+cv2.imshow('soruce',img2)
+cv2.imshow('enna_PepperandSalt',img1)
+cv2.waitKey(0)
+
+
+'方法二'
+
+import cv2 as cv
+import numpy as np
+from PIL import Image
+from skimage import util
+
+img = cv.imread('D:/baduzl/badou/2/dama/lenna.png')
+noise_gs_image=util.random_noise(img,mode='s&p')
+cv.imshow('source',img)
+cv.imshow('lenan',noise_gs_image)
+cv.waitKey(0)
+cv.destroyAllWindows()

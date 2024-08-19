@@ -1,0 +1,78 @@
+
+'''
+主成分分析PCA
+步骤：
+1，对原始数据零均值化
+2，求协方差矩阵，
+3，对协方差矩阵求特征值和特征向量，这些特征向量组成新的特征空间
+'''
+import numpy as np
+class CPCA(object):
+    def __init__(self,X,K):
+        ''' X,为样本矩阵
+            K,为X降维矩阵的阶数'''
+        self.X = X             #样本矩阵X
+        self.K = K             #K阶
+        self.centrX= []        #矩阵X的中心化
+        self.C = []            #样本集的协方差矩阵C
+        self.U = []            #样本矩阵X的降维转换矩阵
+        self.Z = []            #样本矩阵X的降维矩阵Z
+
+        self.centrX = self._centralized()
+        self.C = self.cov()
+        self.U = self.UN()
+        self.Z = self.ZZ()
+      #对样本矩阵中心化
+    def _centralized(self):
+        centrX = []
+      #  mean = np.array([np.mean(attr)] for attr in self.X.T) #样本集的特征均值
+        mean = np.array([np.mean(attr) for attr in self.X.T])  # 样本集的特征均值
+        print('样本集的特征均值：\n',mean)
+        centrX = self.X - mean    ##样本集的中心化
+        print('样本矩阵X的中心化centrX:\n',centrX)
+        return centrX
+     #计算协方差矩阵
+    def cov(self):
+        ns = np.shape(self.centrX)[0]
+        C = np.dot(self.centrX.T,self.centrX)/(ns-1)
+        print('样本矩阵X的协方差矩阵C:\n', C)
+        return C
+      # 求特征值和特征向量，这些特征向量组成新的特征空间
+    def UN(self):
+        a,b = np.linalg.eig(self.C) #特征值赋值给a，对应特征向量赋值给b
+        print('样本集的协方差矩阵C的特征值:\n', a)
+        print('样本集的协方差矩阵C的特征向量:\n', b)
+        ind = np.argsort(-1 * a)  #对特征值倒序排序
+        UT = [b[:, ind[i]] for i in range(self.K)]
+        U = np.transpose(UT)
+        print('%d阶降维转换矩阵U:\n' % self.K, U)
+        return U
+
+
+    def ZZ(self):
+        Z = np.dot(self.X, self.U)
+        print('X shape:', np.shape(self.X))
+        print('U shape:', np.shape(self.U))
+        print('Z shape:', np.shape(Z))
+        print('样本矩阵X的降维矩阵Z:\n', Z)
+        return Z
+if __name__=='__main__':
+    X = np.array([[10, 15, 29],
+                  [15, 46, 13],
+                  [23, 21, 30],
+                  [11, 9, 35],
+                  [42, 45, 11],
+                  [9, 48, 5],
+                  [11, 21, 14],
+                  [8, 5, 15],
+                  [11, 12, 21],
+                  [21, 20, 25]])
+    K = np.shape(X)[1] - 1
+    print('样本集(10行3列，10个样例，每个样例3个特征):\n', X)
+    pca = CPCA(X, K)
+
+
+
+
+
+
